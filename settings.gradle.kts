@@ -16,6 +16,17 @@ dependencyResolutionManagement {
             credentials(PasswordCredentials::class)
         }
     }
+
+    // Allow to override wycdnService version from gradle.properties or from command-line
+    // (eg: `./gradlew build -P wycdnService=x.x.x`)
+    val wycdnService = extra.properties["wycdnService"] as String?
+    if (wycdnService != null) {
+        versionCatalogs {
+            create("libs") {
+                version("wycdnService", wycdnService)
+            }
+        }
+    }
 }
 
 rootProject.name = "wycdn-sampleapp-android"
