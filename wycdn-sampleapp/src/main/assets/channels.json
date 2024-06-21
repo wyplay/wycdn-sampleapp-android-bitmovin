@@ -1,0 +1,19 @@
+{
+    "channels": [
+        {
+            "id": "bbb",
+            "manifest": "https://streamer01.wyplay.com/dash/bbb/index.mpd",
+            "name": "Wyplay Big Buck Bunny"
+        },
+        {
+            "id": "Akamai_low_latency",
+            "manifest": "https://akamaibroadcasteruseast.akamaized.net/cmaf/live/657078/akasource/out.mpd",
+            "name": "Akamai low latency"
+        },
+        {
+            "id": "Dash-if",
+            "manifest": "https://livesim2.dashif.org/livesim2/mup_30/testpic_2s/Manifest.mpd",
+            "name": "Dash-if"
+        }
+    ]
+}

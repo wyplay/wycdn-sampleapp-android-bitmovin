@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">WyCDN Sample App</string>
+    <string name="action_start">Start</string>
+    <string name="label_peerid">PeerId: %1$s</string>
+    <string name="label_wycdn_environment">WyCDN Environment</string>
+    <string name="msg_fetching_media_list">Fetching media list…</string>
+    <string name="msg_error">Error: %1$s</string>
+    <string name="title_media_chooser_screen">%1$s on %2$s</string>
+    <string name="title_settings_screen">@string/app_name</string>
+</resources>
