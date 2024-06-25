@@ -9,6 +9,7 @@
 
 package com.wyplay.wycdn.sampleapp.ui.screens
 
+import android.view.WindowManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -63,10 +64,12 @@ fun PlayerScreen(
     DisposableEffect(Unit) {
         // Enter full-screen mode when composable is initialized
         activity?.setFullScreenMode(true)
+        activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         // Exit full-screen when composable is disposed
         onDispose {
             activity?.setFullScreenMode(false)
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
     }
 
