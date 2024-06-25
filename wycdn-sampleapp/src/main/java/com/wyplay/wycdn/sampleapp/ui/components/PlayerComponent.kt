@@ -13,6 +13,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -36,12 +37,16 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 
 /**
  * Composable function to display a media player component.
  */
+@OptIn(UnstableApi::class)
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 fun PlayerComponent(
     mediaList: List<MediaItem>,
@@ -51,6 +56,15 @@ fun PlayerComponent(
 ) {
     // Get current context
     val context = LocalContext.current
+
+    val minBuffer = 1000
+    val maxBuffer = 5000
+    val playbackBuffer = 1000
+    val playbackRebuffer = 1000
+
+    val customLoadControl = DefaultLoadControl.Builder()
+        .setBufferDurationsMs(minBuffer, maxBuffer, playbackBuffer, playbackRebuffer)
+        .build()
 
     // Initialize player variable using remember to retain its state across recompositions
     var player: Player? by remember { mutableStateOf(null) }
@@ -69,36 +83,39 @@ fun PlayerComponent(
      * Initializes and returns a media player.
      */
     fun initializePlayer() {
-        player = ExoPlayer.Builder(context).build().apply {
-            // Set the media items to play
-            setMediaItems(mediaList, mediaItemIndex, C.TIME_UNSET)
-            // Start playing when ready
-            this.playWhenReady = playWhenReady
-            // Add a listener to observe metadata changes
-            addListener(object : Player.Listener {
-                override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
-                    // Invoke the callback with the new media metadata
-                    onCurrentMediaMetadataChanged(mediaMetadata)
-                }
-                override fun onPlayerError(error: PlaybackException) {
-                    // Auto-resume playback if a recoverable error occurs
-                    when (error.errorCode) {
-                        PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW,
-                        PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS,
-                        PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
-                        PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
-                        PlaybackException.ERROR_CODE_IO_UNSPECIFIED,
-                        PlaybackException.ERROR_CODE_DECODING_FAILED -> {
-                            seekToDefaultPosition()
-                            prepare()
-                        }
-                        else -> {
-                            val rootCause = error.cause?.let { "Caused by: ${it::class.java.simpleName}: ${it.message}" } ?: ""
-                            errorMessage = "${error.errorCodeName} (${error.errorCode})\nPlaybackException: ${error.message}\n$rootCause"
+        player = ExoPlayer.Builder(context)
+            .setLoadControl(customLoadControl)
+            .build().apply {
+                // Set the media items to play
+                setMediaItems(mediaList, mediaItemIndex, C.TIME_UNSET)
+                // Start playing when ready
+                this.playWhenReady = playWhenReady
+                // Add a listener to observe metadata changes
+                addListener(object : Player.Listener {
+                    override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
+                        // Invoke the callback with the new media metadata
+                        onCurrentMediaMetadataChanged(mediaMetadata)
+                    }
+                    override fun onPlayerError(error: PlaybackException) {
+                        // Auto-resume playback if a recoverable error occurs
+                        when (error.errorCode) {
+                            PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW,
+                            PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS,
+                            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
+                            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
+                            PlaybackException.ERROR_CODE_IO_UNSPECIFIED,
+                            PlaybackException.ERROR_CODE_DECODING_FAILED -> {
+                                seekToDefaultPosition()
+                                prepare()
+                            }
+                            else -> {
+                                val rootCause = error.cause?.let { "Caused by: ${it::class.java.simpleName}: ${it.message}" } ?: ""
+                                errorMessage = "${error.errorCodeName} (${error.errorCode})\nPlaybackException: ${error.message}\n$rootCause"
+                            }
                         }
                     }
-                }
-            })
+                })
+
             // Prepare the player
             prepare()
         }
