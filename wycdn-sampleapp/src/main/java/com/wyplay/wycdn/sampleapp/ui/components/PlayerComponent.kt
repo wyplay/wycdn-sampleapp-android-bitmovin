@@ -40,6 +40,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 
 /**
@@ -66,6 +67,9 @@ fun PlayerComponent(
         .setBufferDurationsMs(minBuffer, maxBuffer, playbackBuffer, playbackRebuffer)
         .build()
 
+    val customMediaSourceFactory = DefaultMediaSourceFactory(context)
+    customMediaSourceFactory.setLiveTargetOffsetMs(0)
+
     // Initialize player variable using remember to retain its state across recompositions
     var player: Player? by remember { mutableStateOf(null) }
 
@@ -84,6 +88,7 @@ fun PlayerComponent(
      */
     fun initializePlayer() {
         player = ExoPlayer.Builder(context)
+            .setMediaSourceFactory(customMediaSourceFactory)
             .setLoadControl(customLoadControl)
             .build().apply {
                 // Set the media items to play
