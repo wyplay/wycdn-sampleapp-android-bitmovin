@@ -13,7 +13,6 @@ import androidx.compose.foundation.focusable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -38,7 +37,6 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
@@ -58,18 +56,6 @@ fun PlayerComponent(
     // Get current context
     val context = LocalContext.current
 
-    val minBuffer = 1000
-    val maxBuffer = 5000
-    val playbackBuffer = 1000
-    val playbackRebuffer = 1000
-
-    val customLoadControl = DefaultLoadControl.Builder()
-        .setBufferDurationsMs(minBuffer, maxBuffer, playbackBuffer, playbackRebuffer)
-        .build()
-
-    val customMediaSourceFactory = DefaultMediaSourceFactory(context)
-    customMediaSourceFactory.setLiveTargetOffsetMs(0)
-
     // Initialize player variable using remember to retain its state across recompositions
     var player: Player? by remember { mutableStateOf(null) }
 
@@ -88,8 +74,7 @@ fun PlayerComponent(
      */
     fun initializePlayer() {
         player = ExoPlayer.Builder(context)
-            .setMediaSourceFactory(customMediaSourceFactory)
-            .setLoadControl(customLoadControl)
+            .setMediaSourceFactory(DefaultMediaSourceFactory(context).setLiveTargetOffsetMs(0))
             .build().apply {
                 // Set the media items to play
                 setMediaItems(mediaList, mediaItemIndex, C.TIME_UNSET)
