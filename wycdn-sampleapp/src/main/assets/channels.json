@@ -14,11 +14,6 @@
             "id": "Dash-if",
             "manifest": "https://livesim2.dashif.org/livesim2/mup_30/testpic_2s/Manifest.mpd",
             "name": "Dash-if"
-        },
-        {
-            "id": "BBC_Live_Testcard",
-            "manifest": "https://vs-dash-ww-rd-live.akamaized.net/pl/testcard2020/avc-full.mpd",
-            "name": "BBC Live Testcard"
         }
     ]
 }
