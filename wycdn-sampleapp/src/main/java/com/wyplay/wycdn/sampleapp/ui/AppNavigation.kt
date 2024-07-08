@@ -55,6 +55,8 @@ fun AppNavigation() {
 
     // Initialize the WycdnViewModel using a custom factory to inject dependencies
     val wycdnViewModel: WycdnViewModel = viewModel(factory = WycdnViewModel.Factory)
+    // Collect and observe the state of WyCDN debug info
+    val wycdnDebugInfoState by wycdnViewModel.debugInfoState.collectAsState()
 
     // Create and remember a navigation controller to manage navigation between composable screens
     val navController: NavHostController = rememberNavController()
@@ -93,7 +95,8 @@ fun AppNavigation() {
         composable(route = NavRoute.PlayerScreen.name) {
             PlayerScreen(
                 mediaListState = mediaListState, // Media list for zapping
-                mediaIndex = mediaIndex // Media to play
+                mediaIndex = mediaIndex, // Media to play
+                debugInfoState = wycdnDebugInfoState // Debug info to display
             )
         }
     }

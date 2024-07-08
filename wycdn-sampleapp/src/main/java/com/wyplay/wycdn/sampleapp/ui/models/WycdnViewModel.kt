@@ -12,6 +12,7 @@ package com.wyplay.wycdn.sampleapp.ui.models
 import android.app.Application
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -20,8 +21,18 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.wyplay.wycdn.WycdnServiceConnection
 import com.wyplay.wycdn.sampleapp.SampleApp
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.launch
+
+private const val TAG = "WycdnViewModel"
 
 /**
  * ViewModel managing the WyCDN service connection.
@@ -31,14 +42,22 @@ import kotlinx.coroutines.launch
  */
 class WycdnViewModel(application: Application) : AndroidViewModel(application) {
 
-    /**
-     * Connection to the WyCDN service.
-     */
+    /** Connection to the WyCDN service. */
     private val wycdn = WycdnServiceConnection(getApplication())
 
+    /** WyCDN debug information. */
+    private val debugInfoRepository = WycdnDebugInfoRepository()
+
+    // Backing property for debug info state, initially set to Disabled.
+    private val _debugInfoState = MutableStateFlow<WycdnDebugInfoState>(WycdnDebugInfoState.Disabled)
+
     /**
-     * Identifier to use for our peer.
+     * Property providing [WycdnDebugInfoState] as a [StateFlow], allowing the UI to observe changes to the debug info state.
+     * This flow starts in the Disabled state and updates as the debug info is loaded or if an error occurs.
      */
+    val debugInfoState: StateFlow<WycdnDebugInfoState> = _debugInfoState.asStateFlow()
+
+    /** Identifier to use for our peer. */
     val peerId: String by lazy {
         val app: SampleApp = getApplication()
         val androidId = Settings.Secure.getString(app.contentResolver, Settings.Secure.ANDROID_ID)
@@ -48,6 +67,9 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
     init {
         // Start observing WyCDN environment settings changes
         observeWycdnEnvChanges()
+
+        // Update WyCDN debug information periodically
+        updateWycdnDebugInfo()
     }
 
     override fun onCleared() {
@@ -88,8 +110,47 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
         wycdn.setConfigProperty("wycdn/influxdb/host", wycdnEnv.influxdbHostname)
         wycdn.setConfigProperty("wycdn/graylog/host", wycdnEnv.graylogHostname)
 
+        // Allow calling REST routes for debugging
+        wycdn.setConfigProperty("wycdn/proxy/server_address", "0.0.0.0")
+
         // Start the service
         wycdn.bindService()
+    }
+
+    /**
+     * Updates WyCDN debug info by fetching it periodically.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun updateWycdnDebugInfo() {
+        val app: SampleApp = getApplication()
+        val debugInfoEnabled: Flow<Boolean> = app.settingsRepository.wycdnDebugInfoEnabled
+
+        viewModelScope.launch {
+            // React to changes in debugInfoEnabled to fetch debug info
+            debugInfoEnabled.mapLatest { enabled ->
+                if (enabled) {
+                    // If debug info is enabled, set state to Loading
+                    _debugInfoState.value = WycdnDebugInfoState.Loading
+                    while (true) {
+                        // Trigger updates every 10 seconds
+                        delay(10000)
+                        try {
+                            // Try fetching the debug info from the repository
+                            val debugInfo = debugInfoRepository.fetchDebugInfo()
+                            // If successful, set the state to Ready with the updated info
+                            _debugInfoState.value = WycdnDebugInfoState.Ready(debugInfo)
+                        } catch (e: Exception) {
+                            // If an error occurs, log the error and set state to Error
+                            Log.e(TAG, "Cannot fetch the debug info", e)
+                            _debugInfoState.value = WycdnDebugInfoState.Error(e)
+                        }
+                    }
+                } else {
+                    // If debug info is not enabled, set state to Disabled
+                    _debugInfoState.value = WycdnDebugInfoState.Disabled
+                }
+            }.collect()
+        }
     }
 
     companion object {
@@ -106,4 +167,14 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+}
+
+/**
+ * Represents the state of WyCDN debug info, encapsulating different states for UI rendering.
+ */
+sealed interface WycdnDebugInfoState {
+    data object Disabled : WycdnDebugInfoState
+    data object Loading : WycdnDebugInfoState
+    data class Error(val e: Exception) : WycdnDebugInfoState
+    data class Ready(val debugInfo: WycdnDebugInfo) : WycdnDebugInfoState
 }

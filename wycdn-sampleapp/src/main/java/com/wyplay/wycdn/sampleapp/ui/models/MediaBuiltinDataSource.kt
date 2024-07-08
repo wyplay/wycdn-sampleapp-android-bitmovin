@@ -24,7 +24,7 @@ class MediaBuiltinDataSource(private val assets: AssetManager) : MediaDataSource
         try {
             return@withContext buildMediaList()
         } catch (e: Exception) {
-            throw MediaDataSourceException("Cannot fetch the media list", e)
+            throw MediaDataSourceException("Cannot fetch the media list (${e.message})", e)
         }
     }
 

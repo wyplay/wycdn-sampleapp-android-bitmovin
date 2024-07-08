@@ -26,7 +26,7 @@ class MediaRemoteDataSource(private val url: String?) : MediaDataSource {
         try {
             return@withContext buildMediaList()
         } catch (e: Exception) {
-            throw MediaDataSourceException("Cannot fetch the media list", e)
+            throw MediaDataSourceException("Cannot fetch the media list (${e.message})", e)
         }
     }
 

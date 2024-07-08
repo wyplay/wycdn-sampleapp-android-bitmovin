@@ -3,8 +3,10 @@
     <string name="action_start">Start</string>
     <string name="label_peerid">PeerId: %1$s</string>
     <string name="label_wycdn_environment">WyCDN Environment</string>
+    <string name="label_wycdn_debug_info_enabled">Show WyCDN debug information</string>
     <string name="msg_fetching_media_list">Fetching media list…</string>
     <string name="msg_error">Error: %1$s</string>
+    <string name="msg_loading_wycdn_debug_info">Loading WyCDN debug info…</string>
     <string name="title_media_chooser_screen">%1$s on %2$s</string>
     <string name="title_settings_screen">@string/app_name</string>
 </resources>

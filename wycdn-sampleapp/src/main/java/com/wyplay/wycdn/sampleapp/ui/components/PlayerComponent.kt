@@ -9,6 +9,7 @@
 
 package com.wyplay.wycdn.sampleapp.ui.components
 
+import androidx.annotation.OptIn
 import androidx.compose.foundation.focusable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
@@ -45,7 +46,6 @@ import androidx.media3.ui.PlayerView
  * Composable function to display a media player component.
  */
 @OptIn(UnstableApi::class)
-@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 fun PlayerComponent(
     mediaList: List<MediaItem>,

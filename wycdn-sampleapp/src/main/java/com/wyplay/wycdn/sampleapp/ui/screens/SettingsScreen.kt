@@ -25,6 +25,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -71,6 +72,18 @@ fun SettingsScreen(
         selectedEnv = currentEnv
     }
 
+    // Collect the current debug info enabled state as state for composable to react to changes
+    val wycdnDebugInfoEnabled by settingsViewModel.wycdnDebugInfoEnabled.collectAsState(initial = false)
+
+    // Local state to store the debug info enabled state, initialized with wycdnDebugInfoEnabled
+    var debugInfoEnabled by remember { mutableStateOf(wycdnDebugInfoEnabled) }
+
+    // Observe changes in wycdnDebugInfoEnabled and update debugInfoEnabled accordingly
+    // This is needed as it wycdnDebugInfoEnabled is collected asynchronously
+    LaunchedEffect(wycdnDebugInfoEnabled) {
+        debugInfoEnabled = wycdnDebugInfoEnabled
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("${stringResource(R.string.title_settings_screen)} ${BuildConfig.VERSION_NAME}") })
@@ -98,12 +111,30 @@ fun SettingsScreen(
                 }
             )
 
+            // WyCDN debug info enabled switch
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.label_wycdn_debug_info_enabled)
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Switch(
+                    checked = debugInfoEnabled,
+                    onCheckedChange = {
+                        debugInfoEnabled = it
+                    }
+                )
+            }
+
             Spacer(modifier = Modifier.weight(1f)) // This pushes the button to the bottom
 
             Button(
                 onClick = {
-                    // Update the settings with the selected environment
+                    // Update the settings
                     settingsViewModel.setWycdnEnvironment(selectedEnv)
+                    settingsViewModel.setWycdnDebugInfoEnabled(debugInfoEnabled)
                     // Notify start button has been clicked
                     onStartButtonClick()
                 },

@@ -42,8 +42,10 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.common.MediaItem
 import com.wyplay.wycdn.sampleapp.MainActivity
 import com.wyplay.wycdn.sampleapp.R
-import com.wyplay.wycdn.sampleapp.ui.models.MediaListState
 import com.wyplay.wycdn.sampleapp.ui.components.PlayerComponent
+import com.wyplay.wycdn.sampleapp.ui.models.MediaListState
+import com.wyplay.wycdn.sampleapp.ui.models.WycdnDebugInfo
+import com.wyplay.wycdn.sampleapp.ui.models.WycdnDebugInfoState
 
 /**
  * Media player screen responsible for rendering the ExoPlayer view.
@@ -51,12 +53,15 @@ import com.wyplay.wycdn.sampleapp.ui.components.PlayerComponent
  * @param mediaListState State of the media list, encapsulating whether the media list is loading,
  *                       has encountered an error, or is ready for display.
  * @param mediaIndex Index of the currently selected media item within the media list.
+ * @param debugInfoState State of WyCDN debug information, encapsulating whether the debug info is loading,
+ *  *                    is unavailable because of an error, or is ready for display.
  * @param modifier An optional [Modifier] for this composable.
  */
 @Composable
 fun PlayerScreen(
     mediaListState: MediaListState,
     mediaIndex: Int,
+    debugInfoState: WycdnDebugInfoState,
     modifier: Modifier = Modifier
 ) {
     val activity = (LocalContext.current as? MainActivity)
@@ -84,7 +89,7 @@ fun PlayerScreen(
         }
         is MediaListState.Ready -> {
             // Show player
-            PlayerSurface(mediaListState.mediaList, mediaIndex, modifier)
+            PlayerSurface(mediaListState.mediaList, mediaIndex, debugInfoState, modifier)
         }
     }
 }
@@ -117,6 +122,7 @@ private fun ErrorMessage(e: Exception, modifier: Modifier = Modifier) {
 private fun PlayerSurface(
     mediaList: List<MediaItem>,
     mediaIndex: Int,
+    debugInfoState: WycdnDebugInfoState,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -137,13 +143,22 @@ private fun PlayerSurface(
                 mediaTitle = mediaMetadata.title.toString()
             }
         )
-        // Title chip at the upper right corner
-        TitleChip(
-            title = mediaTitle,
+        // Title chip and optional Debug info chip
+        Column(
             modifier = Modifier
                 .align(Alignment.TopEnd) // Align to the top end corner
-                .padding(dimensionResource(R.dimen.padding_medium)) // Padding from the edges of the Box
-        )
+                .padding(dimensionResource(R.dimen.padding_medium)),  // Padding from the edges of the Box
+            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)) // Spacing between chips
+        ) {
+            TitleChip(
+                title = mediaTitle,
+                modifier = Modifier.align(Alignment.End)
+            )
+            DebugInfoChip(
+                debugInfoState = debugInfoState,
+                modifier = Modifier.align(Alignment.End)
+            )
+        }
     }
 }
 
@@ -158,7 +173,7 @@ private fun TitleChip(
         modifier = modifier
             .background(
                 color = Black.copy(alpha = 0.5f), // Lightly transparent background
-                shape = RoundedCornerShape(50) // Rounded corners for the chip
+                shape = RoundedCornerShape(50.dp) // Rounded corners for the chip
             )
             .padding( // Padding inside the chip
                 horizontal = dimensionResource(R.dimen.padding_small),
@@ -180,6 +195,113 @@ fun TitleChipPreview() {
             modifier = Modifier
                 .align(Alignment.TopEnd) // Align to the top end corner
                 .padding(dimensionResource(R.dimen.padding_medium)) // Padding from the edges of the Box
+        )
+    }
+}
+
+@Composable
+fun DebugInfoChip(
+    debugInfoState: WycdnDebugInfoState,
+    modifier: Modifier = Modifier
+) {
+    val chipModifier = modifier
+        .background(
+            color = Black.copy(alpha = 0.5f), // Lightly transparent background
+            shape = RoundedCornerShape(5.dp) // Lightly rounded corners for the chip
+        )
+        .padding(horizontal = 8.dp, vertical = 4.dp) // Padding inside the chip
+
+    when (debugInfoState) {
+        is WycdnDebugInfoState.Disabled -> {
+            // Show nothing
+        }
+        is WycdnDebugInfoState.Loading -> {
+            Text(
+                text = stringResource(R.string.msg_loading_wycdn_debug_info),
+                color = White,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = chipModifier
+            )
+        }
+        is WycdnDebugInfoState.Error -> {
+            Text(
+                text = stringResource(R.string.msg_error, debugInfoState.e.message ?: ""),
+                color = White,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = chipModifier
+            )
+        }
+        is WycdnDebugInfoState.Ready -> {
+            Column(
+                modifier = chipModifier,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                debugInfoState.debugInfo.toFieldList().forEach { (label, value) ->
+                    Text(
+                        text = "$label: $value",
+                        color = White,
+                        style = MaterialTheme.typography.labelSmall,
+                        textAlign = TextAlign.Left
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFFCCCCCC)
+@Composable
+fun DebugInfoChipLoadingPreview() {
+    val debugInfoState = WycdnDebugInfoState.Loading
+
+    Box(
+        modifier = Modifier.size(250.dp, 100.dp)
+    ) {
+        DebugInfoChip(
+            debugInfoState = debugInfoState,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(dimensionResource(R.dimen.padding_medium))
+        )
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFFCCCCCC)
+@Composable
+fun DebugInfoChipErrorPreview() {
+    val debugInfoState = WycdnDebugInfoState.Error(Exception("message"))
+
+    Box(
+        modifier = Modifier.size(250.dp, 100.dp)
+    ) {
+        DebugInfoChip(
+            debugInfoState = debugInfoState,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(dimensionResource(R.dimen.padding_medium))
+        )
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFFCCCCCC)
+@Composable
+fun DebugInfoChipPreview() {
+    val debugInfoState = WycdnDebugInfoState.Ready(WycdnDebugInfo(
+        peerId = "12345",
+        peerAddress = "192.168.1.1",
+        uploadBandwidth = "10512345",
+        downloadBandwidth = "20512345",
+        ping = "50"
+    ))
+
+    Box(
+        modifier = Modifier.size(250.dp, 200.dp)
+    ) {
+        DebugInfoChip(
+            debugInfoState = debugInfoState,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(dimensionResource(R.dimen.padding_medium))
         )
     }
 }

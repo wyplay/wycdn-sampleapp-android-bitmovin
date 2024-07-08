@@ -33,11 +33,29 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     val wycdnEnvironment: Flow<WycdnEnv> = repository.wycdnEnvironment
 
     /**
-     * Gets the environment to use for WyCDN configuration.
+     * Sets the environment to use for WyCDN configuration.
+     *
+     * @param env The new environment value to set.
      */
     fun setWycdnEnvironment(env: WycdnEnv) {
         viewModelScope.launch {
             repository.setWycdnEnvironment(env)
+        }
+    }
+
+    /**
+     * Gets the current value of whether WyCDN debug info is enabled.
+     */
+    val wycdnDebugInfoEnabled: Flow<Boolean> = repository.wycdnDebugInfoEnabled
+
+    /**
+     * Sets the value of whether WyCDN debug info is enabled.
+     *
+     * @param enable The new Boolean value to set.
+     */
+    fun setWycdnDebugInfoEnabled(enable: Boolean) {
+        viewModelScope.launch {
+            repository.setWycdnDebugInfoEnabled(enable)
         }
     }
 

@@ -12,6 +12,7 @@ package com.wyplay.wycdn.sampleapp.ui.models
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -43,7 +44,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
      * If the environment value does not exist or is invalid, [WycdnEnv.default] is emitted as a fallback.
      */
     val wycdnEnvironment: Flow<WycdnEnv> = dataStore.data.map { preferences ->
-        enumValueOrNull<WycdnEnv>(preferences[WycdnEnv.preferenceKey]) ?: WycdnEnv.default
+        enumValueOrNull<WycdnEnv>(preferences[WYCDN_ENVIRONMENT_KEY]) ?: WycdnEnv.default
     }
 
     /**
@@ -53,8 +54,37 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
      */
     suspend fun setWycdnEnvironment(env: WycdnEnv) {
         dataStore.edit { preferences ->
-            preferences[WycdnEnv.preferenceKey] = env.name
+            preferences[WYCDN_ENVIRONMENT_KEY] = env.name
         }
+    }
+
+    /**
+     * A [Flow] of Boolean representing whether to enable WyCDN debug info. This flow emits
+     * the current value stored in the settings, allowing observers to react to changes.
+     *
+     * If the value does not exist, false is emitted as a fallback.
+     */
+    val wycdnDebugInfoEnabled: Flow<Boolean> = dataStore.data.map { preferences ->
+        preferences[WYCDN_DEBUG_INFO_ENABLED_KEY] ?: false
+    }
+
+    /**
+     * Updates the WyCDN debug info enabled setting.
+     *
+     * @param enable The Boolean value to be stored as the new setting.
+     */
+    suspend fun setWycdnDebugInfoEnabled(enable: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[WYCDN_DEBUG_INFO_ENABLED_KEY] = enable
+        }
+    }
+
+    companion object {
+        /** [Preferences.Key] used to store and retrieve the WyCDN environment setting. */
+        internal val WYCDN_ENVIRONMENT_KEY = stringPreferencesKey("wycdn_environment")
+
+        /** [Preferences.Key] used to store and retrieve the WyCDN debug info enabled setting. */
+        internal val WYCDN_DEBUG_INFO_ENABLED_KEY = booleanPreferencesKey("wycdn_debug_info_enabled")
     }
 }
 
@@ -84,11 +114,6 @@ enum class WycdnEnv(val label: String,
          * The default is `PUBLIC`.
          */
         val default = PUBLIC
-
-        /**
-         * [Preferences.Key] used to store and retrieve the WyCDN environment setting.
-         */
-        val preferenceKey = stringPreferencesKey("wycdn_environment")
     }
 }
 
