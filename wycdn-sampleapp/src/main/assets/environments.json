@@ -1,0 +1,13 @@
+{
+  "default": "public-poc2",
+  "environments": [
+    {
+      "id": "public-poc2",
+      "name": "Public (poc2)",
+      "bootstrapHostname": "node0.poc2.wycdn.wyplay.com",
+      "stunHostname": "stun.poc2.wycdn.wyplay.com",
+      "influxdbHostname": "telegraf.poc2.wycdn.wyplay.com",
+      "graylogHostname": "graylog.poc2.wycdn.wyplay.com"
+    }
+  ]
+}

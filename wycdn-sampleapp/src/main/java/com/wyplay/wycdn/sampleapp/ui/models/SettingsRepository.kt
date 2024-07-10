@@ -35,7 +35,15 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "se
  * @property dataStore The [DataStore] instance used to persist and retrieve settings.
  * This DataStore is expected to be retrieved from [Context.dataStore].
  */
-class SettingsRepository(private val dataStore: DataStore<Preferences>) {
+class SettingsRepository(
+    private val dataStore: DataStore<Preferences>,
+    private val wycdnEnvDataSource: WycdnEnvDataSource
+) {
+
+    /** WyCDN environment list. */
+    val wycdnEnvironmentList: WycdnEnvList by lazy {
+        wycdnEnvDataSource.getEnvList()
+    }
 
     /**
      * A [Flow] of [WycdnEnv] representing the current WyCDN environment setting. This flow emits
@@ -44,7 +52,8 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
      * If the environment value does not exist or is invalid, [WycdnEnv.default] is emitted as a fallback.
      */
     val wycdnEnvironment: Flow<WycdnEnv> = dataStore.data.map { preferences ->
-        enumValueOrNull<WycdnEnv>(preferences[WYCDN_ENVIRONMENT_KEY]) ?: WycdnEnv.default
+        val envId = preferences[WYCDN_ENVIRONMENT_KEY]
+        wycdnEnvironmentList.envList.firstOrNull { it.id == envId } ?: wycdnEnvironmentList.defaultEnv
     }
 
     /**
@@ -54,7 +63,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
      */
     suspend fun setWycdnEnvironment(env: WycdnEnv) {
         dataStore.edit { preferences ->
-            preferences[WYCDN_ENVIRONMENT_KEY] = env.name
+            preferences[WYCDN_ENVIRONMENT_KEY] = env.id
         }
     }
 
@@ -86,44 +95,4 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         /** [Preferences.Key] used to store and retrieve the WyCDN debug info enabled setting. */
         internal val WYCDN_DEBUG_INFO_ENABLED_KEY = booleanPreferencesKey("wycdn_debug_info_enabled")
     }
-}
-
-/**
- * Defines the environment configurations for the WyCDN service.
- *
- * @property label Descriptive name of the environment.
- * @property bootstrapHostname Hostname of the bootstrap node.
- * @property stunHostname Hostname of the STUN server.
- * @property influxdbHostname Hostname of the InfluxDB Telegraf endpoint.
- * @property graylogHostname Hostname of the Graylog endpoint.
- */
-enum class WycdnEnv(val label: String,
-                    val bootstrapHostname: String,
-                    val stunHostname: String,
-                    val influxdbHostname: String,
-                    val graylogHostname: String) {
-    PUBLIC("Public (poc2)",
-        "node0.poc2.wycdn.wyplay.com",
-        "stun.poc2.wycdn.wyplay.com",
-        "telegraf.poc2.wycdn.wyplay.com",
-        "graylog.poc2.wycdn.wyplay.com");
-
-    companion object {
-        /**
-         * Default value used when no WyCDN environment setting is stored.
-         * The default is `PUBLIC`.
-         */
-        val default = PUBLIC
-    }
-}
-
-/**
- * Retrieves an enum value of type [T] by its name, ignoring case sensitivity.
- *
- * @param T The enum class from which the value is to be retrieved. This can be inferred from the call.
- * @param name The name of the enum constant to be retrieved. This can be `null`, in which case `null` will be immediately returned.
- * @return The enum constant of type [T] if a match is found; `null` otherwise.
- */
-inline fun <reified T : Enum<T>> enumValueOrNull(name: String?): T? {
-    return T::class.java.enumConstants?.firstOrNull { it.name.equals(name, ignoreCase = true) }
 }

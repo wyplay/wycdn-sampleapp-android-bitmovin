@@ -33,7 +33,6 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.wyplay.wycdn.sampleapp.R
 import com.wyplay.wycdn.sampleapp.ui.models.MediaListState
-import com.wyplay.wycdn.sampleapp.ui.models.WycdnEnv
 
 /**
  * Media chooser screen allowing to select a media item from a list.
@@ -51,7 +50,7 @@ fun MediaChooserScreen(
     mediaListState: MediaListState,
     onMediaIndexSelected: (Int) -> Unit,
     peerId: String,
-    currentWycdnEnvLabel: String,
+    currentWycdnEnvName: String,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -60,7 +59,7 @@ fun MediaChooserScreen(
                 stringResource(
                     R.string.title_media_chooser_screen,
                     peerId,
-                    currentWycdnEnvLabel
+                    currentWycdnEnvName
                 )) })
         },
         modifier = modifier
@@ -167,6 +166,6 @@ private fun MediaChooserScreenPreview(
         mediaListState = mediaListState,
         onMediaIndexSelected = { },
         peerId = "generic-123abc",
-        currentWycdnEnvLabel = WycdnEnv.default.label
+        currentWycdnEnvName = "Default"
     )
 }

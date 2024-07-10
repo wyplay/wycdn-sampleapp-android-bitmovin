@@ -28,6 +28,11 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(private val repository: SettingsRepository) : ViewModel() {
 
     /**
+     * Gets the WyCDN environment list.
+     */
+    val wycdnEnvironmentList: WycdnEnvList = repository.wycdnEnvironmentList
+
+    /**
      * Gets the environment to use for WyCDN configuration.
      */
     val wycdnEnvironment: Flow<WycdnEnv> = repository.wycdnEnvironment

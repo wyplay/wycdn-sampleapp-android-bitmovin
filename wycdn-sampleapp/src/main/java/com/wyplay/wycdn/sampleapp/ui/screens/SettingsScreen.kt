@@ -42,7 +42,6 @@ import androidx.compose.ui.unit.dp
 import com.wyplay.wycdn.sampleapp.BuildConfig
 import com.wyplay.wycdn.sampleapp.R
 import com.wyplay.wycdn.sampleapp.ui.models.SettingsViewModel
-import com.wyplay.wycdn.sampleapp.ui.models.WycdnEnv
 
 /**
  * Settings screen allowing to update application settings.
@@ -61,7 +60,9 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     // Collect the current environment as state for composable to react to changes
-    val currentEnv by settingsViewModel.wycdnEnvironment.collectAsState(initial = WycdnEnv.default)
+    val currentEnv by settingsViewModel.wycdnEnvironment.collectAsState(
+        initial = settingsViewModel.wycdnEnvironmentList.defaultEnv
+    )
 
     // Local state to store the selected environment, initialized with currentEnv
     var selectedEnv by remember { mutableStateOf(currentEnv) }
@@ -101,11 +102,11 @@ fun SettingsScreen(
             // Environment selector
             DropdownSettingSelector(
                 label = stringResource(R.string.label_wycdn_environment),
-                items = WycdnEnv.entries.map { it.label },
-                selectedValue = selectedEnv.label,
-                onValueChange = { selectedLabel ->
+                items = settingsViewModel.wycdnEnvironmentList.envList.map { it.name },
+                selectedValue = selectedEnv.name,
+                onValueChange = { value ->
                     // Find the WycdnEnv value corresponding to the selected label and store it
-                    WycdnEnv.entries.find { it.label == selectedLabel }?.let { env ->
+                    settingsViewModel.wycdnEnvironmentList.envList.firstOrNull { it.name == value }?.let { env ->
                         selectedEnv = env
                     }
                 }

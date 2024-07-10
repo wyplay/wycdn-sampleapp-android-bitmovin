@@ -14,6 +14,7 @@ import com.wyplay.wycdn.sampleapp.ui.models.MediaBuiltinDataSource
 import com.wyplay.wycdn.sampleapp.ui.models.MediaRemoteDataSource
 import com.wyplay.wycdn.sampleapp.ui.models.MediaRepository
 import com.wyplay.wycdn.sampleapp.ui.models.SettingsRepository
+import com.wyplay.wycdn.sampleapp.ui.models.WycdnEnvDataSource
 import com.wyplay.wycdn.sampleapp.ui.models.dataStore
 
 /**
@@ -28,7 +29,7 @@ class SampleApp : Application() {
      * Instance of [SettingsRepository] providing access to application settings.
      */
     val settingsRepository by lazy {
-        SettingsRepository(dataStore)
+        SettingsRepository(dataStore, WycdnEnvDataSource(this.assets))
     }
 
     /**

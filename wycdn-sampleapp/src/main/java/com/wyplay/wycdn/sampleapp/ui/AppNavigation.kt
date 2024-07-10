@@ -51,7 +51,9 @@ fun AppNavigation() {
     // Initialize the SettingsViewModel using a custom factory to inject dependencies
     val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
     // Collect and observe the current WyCDN environment setting
-    val currentWycdnEnv = settingsViewModel.wycdnEnvironment.collectAsState(initial = WycdnEnv.default)
+    val currentWycdnEnv = settingsViewModel.wycdnEnvironment.collectAsState(
+        initial = settingsViewModel.wycdnEnvironmentList.defaultEnv
+    )
 
     // Initialize the WycdnViewModel using a custom factory to inject dependencies
     val wycdnViewModel: WycdnViewModel = viewModel(factory = WycdnViewModel.Factory)
@@ -88,7 +90,7 @@ fun AppNavigation() {
                     navController.navigate(NavRoute.PlayerScreen.name)
                 },
                 peerId = wycdnViewModel.peerId,
-                currentWycdnEnvLabel = currentWycdnEnv.value.label
+                currentWycdnEnvName = currentWycdnEnv.value.name
             )
         }
         // Navigation route for the PlayerScreen
