@@ -20,3 +20,4 @@ Below, you will find instructions on how to set up and run the sample app.
 
 1. Connect your Android device via USB or use an Android emulator.
 2. Run the app from Android Studio by selecting 'Run -> Run 'wycdn-sampleapp-android''.
+
