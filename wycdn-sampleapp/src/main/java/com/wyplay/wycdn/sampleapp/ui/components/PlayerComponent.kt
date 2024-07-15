@@ -37,11 +37,11 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
-
 /**
  * Composable function to display a media player component.
  */
@@ -50,8 +50,9 @@ import androidx.media3.ui.PlayerView
 fun PlayerComponent(
     mediaList: List<MediaItem>,
     mediaIndex: Int,
+    modifier: Modifier = Modifier,
     onCurrentMediaMetadataChanged: (MediaMetadata) -> Unit = {},
-    modifier: Modifier = Modifier
+    onVideoSizeChanged: (VideoSize) -> Unit = {},
 ) {
     // Get current context
     val context = LocalContext.current
@@ -103,6 +104,11 @@ fun PlayerComponent(
                                 errorMessage = "${error.errorCodeName} (${error.errorCode})\nPlaybackException: ${error.message}\n$rootCause"
                             }
                         }
+                    }
+
+                    override fun onVideoSizeChanged(videoSize: VideoSize) {
+                        // Invoke the callback with the new video size
+                        onVideoSizeChanged(videoSize)
                     }
                 })
 
@@ -219,3 +225,4 @@ fun createPlayerView(player: Player?): PlayerView {
     }
     return playerView
 }
+

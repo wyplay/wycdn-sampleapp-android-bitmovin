@@ -9,6 +9,9 @@
 
 package com.wyplay.wycdn.sampleapp.ui.screens
 
+import android.os.Parcel
+import android.os.Parcelable
+import android.util.Log
 import android.view.WindowManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +42,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
 import com.wyplay.wycdn.sampleapp.MainActivity
 import com.wyplay.wycdn.sampleapp.R
@@ -62,7 +69,8 @@ fun PlayerScreen(
     mediaListState: MediaListState,
     mediaIndex: Int,
     debugInfoState: WycdnDebugInfoState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    playerInfoViewModel: PlayerInfoViewModel = viewModel(),
 ) {
     val activity = (LocalContext.current as? MainActivity)
 
@@ -89,8 +97,19 @@ fun PlayerScreen(
         }
         is MediaListState.Ready -> {
             // Show player
-            PlayerSurface(mediaListState.mediaList, mediaIndex, debugInfoState, modifier)
+            PlayerSurface(mediaListState.mediaList, mediaIndex, debugInfoState, modifier, playerInfoViewModel)
         }
+    }
+}
+
+data class PlayerInfo(val resolution: String)
+
+class PlayerInfoViewModel : ViewModel() {
+    private val _playerInfo = MutableLiveData(PlayerInfo("0x0"))
+    val playerInfo: MutableLiveData<PlayerInfo> = _playerInfo
+
+    fun updatePlayerInfo(newPlayerInfo: PlayerInfo) {
+        _playerInfo.value = newPlayerInfo
     }
 }
 
@@ -123,8 +142,11 @@ private fun PlayerSurface(
     mediaList: List<MediaItem>,
     mediaIndex: Int,
     debugInfoState: WycdnDebugInfoState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    playerInfoViewModel: PlayerInfoViewModel = viewModel(),
 ) {
+    val playerInfo by playerInfoViewModel.playerInfo.observeAsState(PlayerInfo("0x0"))
+
     Box(
         modifier = modifier
             .background(color = Black)
@@ -141,7 +163,11 @@ private fun PlayerSurface(
             onCurrentMediaMetadataChanged = { mediaMetadata ->
                 // Update the title chip
                 mediaTitle = mediaMetadata.title.toString()
-            }
+            },
+            onVideoSizeChanged = { videoSize ->
+                playerInfoViewModel.updatePlayerInfo(PlayerInfo("${videoSize.width}x${videoSize.height}"))
+                Log.e("PlayerSurface", "currentResolution: ${playerInfo.resolution}")
+            },
         )
         // Title chip and optional Debug info chip
         Column(
@@ -156,7 +182,8 @@ private fun PlayerSurface(
             )
             DebugInfoChip(
                 debugInfoState = debugInfoState,
-                modifier = Modifier.align(Alignment.End)
+                modifier = Modifier.align(Alignment.End),
+                playerInfoViewModel = playerInfoViewModel
             )
         }
     }
@@ -202,8 +229,11 @@ fun TitleChipPreview() {
 @Composable
 fun DebugInfoChip(
     debugInfoState: WycdnDebugInfoState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    playerInfoViewModel: PlayerInfoViewModel = viewModel(),
 ) {
+    val playerInfo by playerInfoViewModel.playerInfo.observeAsState(PlayerInfo("0x0"))
+
     val chipModifier = modifier
         .background(
             color = Black.copy(alpha = 0.5f), // Lightly transparent background
@@ -244,6 +274,12 @@ fun DebugInfoChip(
                         textAlign = TextAlign.Left
                     )
                 }
+                Text(
+                    text = "Resolution: ${playerInfo.resolution}",
+                    color = White,
+                    style = MaterialTheme.typography.labelSmall,
+                    textAlign = TextAlign.Left
+                )
             }
         }
     }
