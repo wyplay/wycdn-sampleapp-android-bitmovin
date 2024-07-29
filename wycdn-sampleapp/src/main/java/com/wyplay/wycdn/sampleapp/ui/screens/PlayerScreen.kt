@@ -107,16 +107,22 @@ fun PlayerScreen(
             // Show loading indicator
             LoadingMessage(modifier)
         }
+
         is MediaListState.Error -> {
             // Error occurred
             ErrorMessage(mediaListState.e, modifier)
         }
+
         is MediaListState.Ready -> {
             // Show player
-            PlayerSurface(mediaListState.mediaList, mediaIndex, debugInfoState, modifier, playerInfoViewModel)
+            PlayerSurface(
+                mediaListState.mediaList,
+                mediaIndex,
+                debugInfoState,
+                modifier,
+                playerInfoViewModel
+            )
         }
-
-        else -> {}
     }
 
 }
@@ -210,7 +216,7 @@ private fun PlayerSurface(
             )
         }
 
-        if(loaderFlag){
+        if (loaderFlag) {
             CircularProgressIndicator(modifier = Modifier.size(50.dp), color = White)
         }
     }
@@ -274,6 +280,7 @@ fun DebugInfoChip(
         is WycdnDebugInfoState.Disabled -> {
             // Show nothing
         }
+
         is WycdnDebugInfoState.Loading -> {
             Text(
                 text = stringResource(R.string.msg_loading_wycdn_debug_info),
@@ -282,6 +289,7 @@ fun DebugInfoChip(
                 modifier = chipModifier
             )
         }
+
         is WycdnDebugInfoState.Error -> {
             Text(
                 text = stringResource(R.string.msg_error, debugInfoState.e.message ?: ""),
@@ -290,6 +298,7 @@ fun DebugInfoChip(
                 modifier = chipModifier
             )
         }
+
         is WycdnDebugInfoState.Ready -> {
             Column(
                 modifier = chipModifier,
@@ -309,16 +318,22 @@ fun DebugInfoChip(
                     style = MaterialTheme.typography.labelSmall,
                     textAlign = TextAlign.Left
                 )
-                Button(onClick = {
-                    resolutionViewModel.setMenuFlagMobile(!showResolutionMenuFlag)
-                },colors = ButtonDefaults.buttonColors(containerColor = Transparent)
-                    ,modifier = Modifier
+                Button(
+                    onClick = {
+                        resolutionViewModel.setMenuFlagMobile(!showResolutionMenuFlag)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Transparent),
+                    modifier = Modifier
                         .padding(1.dp)
                         .align(Alignment.End)
-                ){
-                    Icon(imageVector = Icons.Default.Settings, contentDescription = "Resolution", tint = White)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Resolution",
+                        tint = White
+                    )
                 }
-                if (showResolutionMenuFlag){
+                if (showResolutionMenuFlag) {
                     ShowResolutionMenu()
                 }
             }
@@ -334,74 +349,75 @@ fun ShowResolutionMenu() {
     val formats by resolutionViewModel.formats.collectAsState(initial = mutableSetOf())
     val selectedResolutionStr by resolutionViewModel.formatStr.collectAsState(initial = null)
 
-    formats.add(Pair(0,0)) //AUTO
+    formats.add(Pair(0, 0)) //AUTO
 
     var selectedResolution by remember {
-            mutableStateOf<Pair<Int,Int>?>(null)
-        }
-
-    val handleResolutionSelect: (Int,Int,String) -> Unit = { height,width,resolutionStr ->
-       selectedResolution = Pair(height,width)
-       resolutionViewModel.setMenuFlagMobile(false)
-       resolutionViewModel.setLoaderFlag(true)
-       resolutionViewModel.setSelectedResolution(Pair(height,width))
-       resolutionViewModel.addResolutionFormatStr(resolutionStr)
+        mutableStateOf<Pair<Int, Int>?>(null)
     }
 
-    Column(modifier = Modifier
-        .width(200.dp)
-        .background(Transparent)
-    ){
-            LazyColumn(
-                modifier = Modifier
-                    .background(
-                        White.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(5.dp)
-                    )
-                    .width(120.dp)
-                    .align(Alignment.End)
-            ) {
-                items(formats.toList()) { resolution ->
+    val handleResolutionSelect: (Int, Int, String) -> Unit = { height, width, resolutionStr ->
+        selectedResolution = Pair(height, width)
+        resolutionViewModel.setMenuFlagMobile(false)
+        resolutionViewModel.setLoaderFlag(true)
+        resolutionViewModel.setSelectedResolution(Pair(height, width))
+        resolutionViewModel.addResolutionFormatStr(resolutionStr)
+    }
 
-                    val resolutionString = if (resolution?.first == 0){
-                        "Auto"
-                    }else{
-                        resolution?.first.toString() + "p "
-                    }
+    Column(
+        modifier = Modifier
+            .width(200.dp)
+            .background(Transparent)
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .background(
+                    White.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(5.dp)
+                )
+                .width(120.dp)
+                .align(Alignment.End)
+        ) {
+            items(formats.toList()) { resolution ->
 
-                    Row(modifier = Modifier
-                        .clickable {
-                            handleResolutionSelect(
-                                resolution?.first ?: 0,
-                                resolution?.second ?: 0,
-                                resolutionString
-                            )
-                        }
-                        .padding(vertical = 1.dp)) {
-                        Text(
-                            text = resolutionString,
-                            modifier = Modifier
-                                .padding(10.dp)
-                                .width(80.dp),
-                            style = TextStyle(
-                                color = White,
-                                fontSize = 12.sp
-                            )
+                val resolutionString = if (resolution?.first == 0) {
+                    "Auto"
+                } else {
+                    resolution?.first.toString() + "p "
+                }
+
+                Row(modifier = Modifier
+                    .clickable {
+                        handleResolutionSelect(
+                            resolution?.first ?: 0,
+                            resolution?.second ?: 0,
+                            resolutionString
                         )
-                        if (resolutionString == selectedResolutionStr) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = "Selected",
-                                tint = White,
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .align(Alignment.CenterVertically)
-                            )
-                        }
+                    }
+                    .padding(vertical = 1.dp)) {
+                    Text(
+                        text = resolutionString,
+                        modifier = Modifier
+                            .padding(10.dp)
+                            .width(80.dp),
+                        style = TextStyle(
+                            color = White,
+                            fontSize = 12.sp
+                        )
+                    )
+                    if (resolutionString == selectedResolutionStr) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = "Selected",
+                            tint = White,
+                            modifier = Modifier
+                                .size(10.dp)
+                                .align(Alignment.CenterVertically)
+                        )
                     }
                 }
             }
-   }
+        }
+    }
 }
 
 @Preview(showBackground = true, backgroundColor = 0xFFCCCCCC)
@@ -441,13 +457,15 @@ fun DebugInfoChipErrorPreview() {
 @Preview(showBackground = true, backgroundColor = 0xFFCCCCCC)
 @Composable
 fun DebugInfoChipPreview() {
-    val debugInfoState = WycdnDebugInfoState.Ready(WycdnDebugInfo(
-        peerId = "12345",
-        peerAddress = "192.168.1.1",
-        uploadBandwidth = "10512345",
-        downloadBandwidth = "20512345",
-        ping = "50"
-    ))
+    val debugInfoState = WycdnDebugInfoState.Ready(
+        WycdnDebugInfo(
+            peerId = "12345",
+            peerAddress = "192.168.1.1",
+            uploadBandwidth = "10512345",
+            downloadBandwidth = "20512345",
+            ping = "50"
+        )
+    )
 
     Box(
         modifier = Modifier.size(250.dp, 300.dp)

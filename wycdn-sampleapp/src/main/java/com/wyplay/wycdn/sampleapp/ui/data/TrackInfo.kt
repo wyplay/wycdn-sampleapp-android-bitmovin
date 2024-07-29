@@ -6,6 +6,7 @@
  * under an Open Source License of any type without the expressed written
  * permission of Wyplay.
  */
+
 package com.wyplay.wycdn.sampleapp.ui.data
 
 import androidx.media3.common.TrackGroup

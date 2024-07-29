@@ -108,18 +108,22 @@ fun PlayerComponent(
     playerView.useController = true
     playerView.controllerAutoShow = true
 
-    val trackSelector = DefaultTrackSelector(context).apply {  }
+    val trackSelector = DefaultTrackSelector(context).apply { }
     val resolutionControl = ResolutionControl(trackSelector)
     val selectedResolution by resolutionViewModel.selectedResolution.collectAsState()
     val trackInfoList by resolutionViewModel.trackInfoList.collectAsState()
 
     LaunchedEffect(selectedResolution) {
-        if (selectedResolution!=null) {
-            if (selectedResolution!!.first > 0){
-                val param = resolutionControl.setTrackByResolution(selectedResolution!!.first, selectedResolution!!.second,trackInfoList)
+        if (selectedResolution != null) {
+            if (selectedResolution!!.first > 0) {
+                val param = resolutionControl.setTrackByResolution(
+                    selectedResolution!!.first,
+                    selectedResolution!!.second,
+                    trackInfoList
+                )
                 param?.let { player?.trackSelectionParameters = it }
-            }else{
-                //AUTO
+            } else {
+                // AUTO
                 val param = resolutionControl.setAutoResolution()
                 player?.trackSelectionParameters = param
             }
@@ -143,6 +147,7 @@ fun PlayerComponent(
                         // Invoke the callback with the new media metadata
                         onCurrentMediaMetadataChanged(mediaMetadata)
                     }
+
                     override fun onPlayerError(error: PlaybackException) {
                         // Auto-resume playback if a recoverable error occurs
                         when (error.errorCode) {
@@ -155,26 +160,40 @@ fun PlayerComponent(
                                 seekToDefaultPosition()
                                 prepare()
                             }
+
                             else -> {
-                                val rootCause = error.cause?.let { "Caused by: ${it::class.java.simpleName}: ${it.message}" } ?: ""
-                                errorMessage = "${error.errorCodeName} (${error.errorCode})\nPlaybackException: ${error.message}\n$rootCause"
+                                val rootCause =
+                                    error.cause?.let { "Caused by: ${it::class.java.simpleName}: ${it.message}" }
+                                        ?: ""
+                                errorMessage =
+                                    "${error.errorCodeName} (${error.errorCode})\nPlaybackException: ${error.message}\n$rootCause"
                             }
                         }
                     }
+
                     override fun onVideoSizeChanged(videoSize: VideoSize) {
                         // Invoke the callback with the new video size
                         onVideoSizeChanged(videoSize)
                     }
+
                     //Get all availiable resolutions for the playing media
                     override fun onTracksChanged(tracks: Tracks) {
                         for (trackGroup in tracks.groups) {
                             for (i in 0 until trackGroup.length) {
                                 val trackFormat = trackGroup.getTrackFormat(i)
                                 val isSelected = trackGroup.isSelected
-                                if (trackFormat.height > 0 && isSelected){
-                                    val trackInfo = TrackInfo(trackGroup.mediaTrackGroup,i,trackFormat.height,trackFormat.width)
+                                if (trackFormat.height > 0 && isSelected) {
+                                    val trackInfo = TrackInfo(
+                                        trackGroup.mediaTrackGroup,
+                                        i,
+                                        trackFormat.height,
+                                        trackFormat.width
+                                    )
                                     resolutionViewModel.addTrackInfo(trackInfo)
-                                    resolutionViewModel.addResolutionFormat(trackFormat.height,trackFormat.width)
+                                    resolutionViewModel.addResolutionFormat(
+                                        trackFormat.height,
+                                        trackFormat.width
+                                    )
                                 }
                             }
                         }
@@ -182,16 +201,16 @@ fun PlayerComponent(
 
                     override fun onPlaybackStateChanged(playbackState: Int) {
                         super.onPlaybackStateChanged(playbackState)
-                        when(playbackState){
-                            Player.STATE_READY ->{
+                        when (playbackState) {
+                            Player.STATE_READY -> {
                                 resolutionViewModel.setLoaderFlag(false)
                             }
                         }
                     }
                 })
-            // Prepare the player
-            prepare()
-        }
+                // Prepare the player
+                prepare()
+            }
     }
 
     // Function to release the player
@@ -218,19 +237,20 @@ fun PlayerComponent(
                 playerView.onPause()
                 releasePlayer()
             }
+
             else -> {}
         }
     }
 
     // Embed PlayerView into the Compose UI hierarchy using an AndroidView
-    Box (modifier = Modifier.fillMaxSize()){
+    Box(modifier = Modifier.fillMaxSize()) {
 
         val buttonFocusRequester = FocusRequester()
         val playerFocusRequester = FocusRequester()
         val showResolutionMenuFlag by resolutionViewModel.menuFlagTV.collectAsState(initial = false)
         val showResolutionBox by resolutionViewModel.resolutionMenuFocus.collectAsState(initial = false)
 
-        Column (modifier = Modifier.fillMaxSize()){
+        Column(modifier = Modifier.fillMaxSize()) {
 
             if (showResolutionBox) {
 
@@ -241,9 +261,10 @@ fun PlayerComponent(
                         .background(color = Transparent)
                 ) {
 
-                    Button(onClick = {
-                        resolutionViewModel.setMenuFlagTV(!showResolutionMenuFlag)
-                    },
+                    Button(
+                        onClick = {
+                            resolutionViewModel.setMenuFlagTV(!showResolutionMenuFlag)
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = Transparent),
                         modifier = Modifier
                             .padding(1.dp)
@@ -262,12 +283,12 @@ fun PlayerComponent(
             }
 
             LaunchedEffect(showResolutionBox) {
-                if (showResolutionBox){
+                if (showResolutionBox) {
                     buttonFocusRequester.requestFocus()
                 }
             }
 
-            Box{
+            Box {
                 AndroidView(
                     modifier = modifier
                         .focusRequester(playerFocusRequester)
@@ -317,26 +338,27 @@ fun ShowResolutionMenu() {
     val formats by resolutionViewModel.formats.collectAsState(initial = mutableSetOf())
     val selectedResolutionStr by resolutionViewModel.formatStr.collectAsState(initial = null)
 
-    formats.add(Pair(0,0)) //AUTO
+    formats.add(Pair(0, 0)) // AUTO
 
     var selectedResolution by remember {
-        mutableStateOf<Pair<Int,Int>?>(null)
+        mutableStateOf<Pair<Int, Int>?>(null)
     }
 
-    val handleResolutionSelect: (Int,Int,String) -> Unit = { height,width,resolutionStr ->
-        selectedResolution = Pair(height,width)
+    val handleResolutionSelect: (Int, Int, String) -> Unit = { height, width, resolutionStr ->
+        selectedResolution = Pair(height, width)
         resolutionViewModel.setMenuFlagTV(false)
         resolutionViewModel.setFocusOnResolutionMenu(true)
         resolutionViewModel.setLoaderFlag(true)
         resolutionViewModel.setFocusOnResolutionMenu(false)
-        resolutionViewModel.setSelectedResolution(Pair(height,width))
+        resolutionViewModel.setSelectedResolution(Pair(height, width))
         resolutionViewModel.addResolutionFormatStr(resolutionStr)
     }
 
-    Column(modifier = Modifier
-        .width(200.dp)
-        .background(Transparent)
-    ){
+    Column(
+        modifier = Modifier
+            .width(200.dp)
+            .background(Transparent)
+    ) {
         LazyColumn(
             modifier = Modifier
                 .background(
@@ -348,9 +370,9 @@ fun ShowResolutionMenu() {
         ) {
             items(formats.toList()) { resolution ->
 
-                val resolutionString = if (resolution?.first == 0){
+                val resolutionString = if (resolution?.first == 0) {
                     "Auto"
-                }else{
+                } else {
                     resolution?.first.toString() + "p "
                 }
 

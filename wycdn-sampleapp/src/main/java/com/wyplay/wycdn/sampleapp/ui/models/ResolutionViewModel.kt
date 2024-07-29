@@ -6,6 +6,7 @@
  * under an Open Source License of any type without the expressed written
  * permission of Wyplay.
  */
+
 package com.wyplay.wycdn.sampleapp.ui.models
 
 import android.util.Log
@@ -15,7 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 class ResolutionViewModel : ViewModel() {
-    //send resolution selection to player
+    // Send resolution selection to player
     private val _selectedResolution = MutableStateFlow<Pair<Int, Int>?>(null)
     val selectedResolution: StateFlow<Pair<Int, Int>?> = _selectedResolution
 
@@ -23,11 +24,11 @@ class ResolutionViewModel : ViewModel() {
         _selectedResolution.value = resolution
     }
 
-    //send the track info from player to UI
+    // Send the track info from player to UI
     private val _trackInfoList = MutableStateFlow<MutableList<TrackInfo>>(mutableListOf())
     val trackInfoList: StateFlow<MutableList<TrackInfo>> = _trackInfoList
 
-    //send resolution to the UI to poplulate the list
+    // Send resolution to the UI to poplulate the list
     private val _formats = MutableStateFlow<MutableSet<Pair<Int, Int>?>>(mutableSetOf())
     val formats: StateFlow<MutableSet<Pair<Int, Int>?>> = _formats
 
@@ -45,7 +46,6 @@ class ResolutionViewModel : ViewModel() {
 
     private val _resolutionMenuFocus = MutableStateFlow(false)
     val resolutionMenuFocus: StateFlow<Boolean> = _resolutionMenuFocus
-
 
     init {
         _trackInfoList.value = mutableListOf()
