@@ -53,11 +53,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
@@ -68,6 +66,9 @@ import com.wyplay.wycdn.sampleapp.ui.components.PlayerComponent
 import com.wyplay.wycdn.sampleapp.ui.models.MediaListState
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnDebugInfo
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnDebugInfoState
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Media player screen responsible for rendering the ExoPlayer view.
@@ -123,8 +124,8 @@ fun PlayerScreen(
 data class PlayerInfo(val resolution: String)
 
 class PlayerInfoViewModel : ViewModel() {
-    private val _playerInfo = MutableLiveData(PlayerInfo("0x0"))
-    val playerInfo: MutableLiveData<PlayerInfo> = _playerInfo
+    private val _playerInfo = MutableStateFlow(PlayerInfo("0x0"))
+    val playerInfo: StateFlow<PlayerInfo> = _playerInfo.asStateFlow()
 
     fun updatePlayerInfo(newPlayerInfo: PlayerInfo) {
         _playerInfo.value = newPlayerInfo
@@ -164,7 +165,7 @@ private fun PlayerSurface(
     playerInfoViewModel: PlayerInfoViewModel = viewModel(),
 ) {
 
-    val playerInfo by playerInfoViewModel.playerInfo.observeAsState(PlayerInfo("0x0"))
+    val playerInfo by playerInfoViewModel.playerInfo.collectAsState(initial = PlayerInfo("0x0"))
 
     val resolutionViewModel: ResolutionViewModel = viewModel()
     val loaderFlag by resolutionViewModel.loaderFlag.collectAsState(initial = false)
@@ -258,7 +259,7 @@ fun DebugInfoChip(
     modifier: Modifier = Modifier,
     playerInfoViewModel: PlayerInfoViewModel = viewModel(),
 ) {
-    val playerInfo by playerInfoViewModel.playerInfo.observeAsState(PlayerInfo("0x0"))
+    val playerInfo by playerInfoViewModel.playerInfo.collectAsState(initial = PlayerInfo("0x0"))
     val resolutionViewModel: ResolutionViewModel = viewModel()
     val showResolutionMenuFlag by resolutionViewModel.menuFlagMobile.collectAsState(initial = false)
 
