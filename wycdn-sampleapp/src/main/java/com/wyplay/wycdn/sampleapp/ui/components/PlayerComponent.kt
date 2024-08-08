@@ -15,6 +15,7 @@ import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -245,12 +246,15 @@ fun PlayerComponent(
     // Embed PlayerView into the Compose UI hierarchy using an AndroidView
     Box(modifier = Modifier.fillMaxSize()) {
 
-        val buttonFocusRequester = FocusRequester()
-        val playerFocusRequester = FocusRequester()
+        val buttonFocusRequester = remember { FocusRequester() }
+        val playerFocusRequester = remember { FocusRequester() }
         val showResolutionMenuFlag by resolutionViewModel.menuFlagTV.collectAsState(initial = false)
         val showResolutionBox by resolutionViewModel.resolutionMenuFocus.collectAsState(initial = false)
 
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center
+        ) {
 
             if (showResolutionBox) {
 
@@ -280,42 +284,40 @@ fun PlayerComponent(
                     }
                 }
 
-            }
-
-            LaunchedEffect(showResolutionBox) {
-                if (showResolutionBox) {
-                    buttonFocusRequester.requestFocus()
+                LaunchedEffect(showResolutionBox) {
+                    if (showResolutionBox) {
+                        buttonFocusRequester.requestFocus()
+                    }
                 }
             }
 
-            Box {
-                AndroidView(
-                    modifier = modifier
-                        .focusRequester(playerFocusRequester)
-                        .focusable()
-                        .onFocusChanged { focusState ->
-                            //Debug
-                            if (focusState.isFocused) {
-                                Log.d("focusscreen", "player focus")
-                            } else {
-                                Log.e("focusscreen", "player has no focus")
-                            }
+            AndroidView(
+                modifier = modifier
+                    .focusRequester(playerFocusRequester)
+                    .focusable()
+                    .onFocusChanged { focusState ->
+                        //Debug
+                        if (focusState.isFocused) {
+                            Log.d("focusscreen", "player focus")
+                        } else {
+                            Log.e("focusscreen", "player has no focus")
                         }
-                        .onKeyEvent { keyEvent ->
-                            if (keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-                                resolutionViewModel.setFocusOnResolutionMenu(true)
-                                true
-                            } else {
-                                playerView.dispatchKeyEvent(keyEvent.nativeKeyEvent)
-                            }
-                        },
-                    factory = {
-                        playerView
                     }
-                )
-            }
+                    .onKeyEvent { keyEvent ->
+                        if (keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                            resolutionViewModel.setFocusOnResolutionMenu(true)
+                            true
+                        } else {
+                            playerView.dispatchKeyEvent(keyEvent.nativeKeyEvent)
+                        }
+                    },
+                factory = {
+                    playerView
+                }
+            )
         }
     }
+
     // Display an AlertDialog for error messages
     if (errorMessage.isNotEmpty()) {
         AlertDialog(
