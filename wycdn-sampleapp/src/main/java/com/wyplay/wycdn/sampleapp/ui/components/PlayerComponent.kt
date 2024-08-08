@@ -157,6 +157,7 @@ fun PlayerComponent(
                             PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
                             PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
                             PlaybackException.ERROR_CODE_IO_UNSPECIFIED,
+                            PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED,
                             PlaybackException.ERROR_CODE_DECODING_FAILED -> {
                                 seekToDefaultPosition()
                                 prepare()
