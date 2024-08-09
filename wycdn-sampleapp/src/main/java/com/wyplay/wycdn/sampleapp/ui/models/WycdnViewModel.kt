@@ -104,14 +104,14 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
         wycdn.unbindService()
 
         // Set configuration properties based on provided environment
-        wycdn.setConfigProperty("wycdn/agent/peer_id", peerId)
-        wycdn.setConfigProperty("wycdn/agent/stun", wycdnEnv.stunHostname)
-        wycdn.setConfigProperty("wycdn/peer/bootstrap", wycdnEnv.bootstrapHostname)
-        wycdn.setConfigProperty("wycdn/influxdb/host", wycdnEnv.influxdbHostname)
-        wycdn.setConfigProperty("wycdn/graylog/host", wycdnEnv.graylogHostname)
+        wycdn.setConfigProperty("wycdn.agent.peer_id", peerId)
+        wycdn.setConfigProperty("wycdn.agent.stun", wycdnEnv.stunHostname)
+        wycdn.setConfigProperty("wycdn.peer.bootstrap", wycdnEnv.bootstrapHostname)
+        wycdn.setConfigProperty("wycdn.influxdb.host", wycdnEnv.influxdbHostname)
+        wycdn.setConfigProperty("wycdn.graylog.host", wycdnEnv.graylogHostname)
 
         // Allow calling REST routes for debugging
-        wycdn.setConfigProperty("wycdn/proxy/server_address", "0.0.0.0")
+        wycdn.setConfigProperty("wycdn.proxy.server_address", "0.0.0.0")
 
         // Start the service
         wycdn.bindService()
