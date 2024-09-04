@@ -15,6 +15,10 @@ dependencyResolutionManagement {
             url = uri("https://maven.wyplay.com/releases")
             credentials(PasswordCredentials::class)
         }
+        maven {
+            name = "bitmovinRepositoryReleases"
+            url = uri("https://artifacts.bitmovin.com/artifactory/public-releases")
+        }
     }
 
     // Allow to override wycdnService version from gradle.properties or from command-line
