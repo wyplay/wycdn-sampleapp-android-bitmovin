@@ -12,28 +12,17 @@ package com.wyplay.wycdn.sampleapp.ui.screens
 import android.util.Log
 import android.view.WindowManager
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,15 +42,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.Color.Companion.Transparent
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
 import com.wyplay.wycdn.sampleapp.MainActivity
 import com.wyplay.wycdn.sampleapp.R
-import com.wyplay.wycdn.sampleapp.ui.models.ResolutionViewModel
 import com.wyplay.wycdn.sampleapp.ui.components.PlayerComponent
 import com.wyplay.wycdn.sampleapp.ui.models.MediaListState
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnDebugInfo
@@ -173,8 +158,6 @@ private fun PlayerSurface(
 
     val playerInfo by playerInfoViewModel.playerInfo.collectAsState(initial = PlayerInfo("0x0"))
 
-    val resolutionViewModel: ResolutionViewModel = viewModel()
-    val loaderFlag by resolutionViewModel.loaderFlag.collectAsState(initial = false)
     Box(
         modifier = modifier
             .background(color = Black)
@@ -189,12 +172,12 @@ private fun PlayerSurface(
         PlayerComponent(
             mediaList = mediaList,
             mediaIndex = mediaIndex,
-            onCurrentMediaMetadataChanged = { mediaMetadata ->
+            onCurrentMediaChanged = {
                 // Update the title chip
-                mediaTitle = mediaMetadata.title.toString()
+                mediaTitle = it.config.title.toString()
             },
-            onVideoSizeChanged = { videoSize ->
-                playerInfoViewModel.updatePlayerInfo(PlayerInfo("${videoSize.width}x${videoSize.height}"))
+            onVideoQualityChanged = { videoQuality ->
+                playerInfoViewModel.updatePlayerInfo(PlayerInfo("${videoQuality.width}x${videoQuality.height}"))
                 Log.e("PlayerSurface", "currentResolution: ${playerInfo.resolution}")
             },
         )
@@ -214,10 +197,6 @@ private fun PlayerSurface(
                 modifier = Modifier.align(Alignment.End),
                 playerInfoViewModel = playerInfoViewModel
             )
-        }
-
-        if (loaderFlag) {
-            CircularProgressIndicator(modifier = Modifier.size(50.dp), color = White)
         }
     }
 }
@@ -266,8 +245,6 @@ fun DebugInfoChip(
     playerInfoViewModel: PlayerInfoViewModel = viewModel(),
 ) {
     val playerInfo by playerInfoViewModel.playerInfo.collectAsState(initial = PlayerInfo("0x0"))
-    val resolutionViewModel: ResolutionViewModel = viewModel()
-    val showResolutionMenuFlag by resolutionViewModel.menuFlagMobile.collectAsState(initial = false)
 
     val chipModifier = modifier
         .background(
@@ -318,103 +295,6 @@ fun DebugInfoChip(
                     style = MaterialTheme.typography.labelSmall,
                     textAlign = TextAlign.Left
                 )
-                Button(
-                    onClick = {
-                        resolutionViewModel.setMenuFlagMobile(!showResolutionMenuFlag)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Transparent),
-                    modifier = Modifier
-                        .padding(1.dp)
-                        .align(Alignment.End)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "Resolution",
-                        tint = White
-                    )
-                }
-                if (showResolutionMenuFlag) {
-                    ShowResolutionMenu()
-                }
-            }
-        }
-    }
-}
-
-
-@Preview(showBackground = true, backgroundColor = 0xFFCCCCCC)
-@Composable
-fun ShowResolutionMenu() {
-    val resolutionViewModel: ResolutionViewModel = viewModel()
-    val formats by resolutionViewModel.formats.collectAsState(initial = mutableSetOf())
-    val selectedResolutionStr by resolutionViewModel.formatStr.collectAsState(initial = null)
-
-    formats.add(Pair(0, 0)) //AUTO
-
-    var selectedResolution by remember {
-        mutableStateOf<Pair<Int, Int>?>(null)
-    }
-
-    val handleResolutionSelect: (Int, Int, String) -> Unit = { height, width, resolutionStr ->
-        selectedResolution = Pair(height, width)
-        resolutionViewModel.setMenuFlagMobile(false)
-        resolutionViewModel.setLoaderFlag(true)
-        resolutionViewModel.setSelectedResolution(Pair(height, width))
-        resolutionViewModel.addResolutionFormatStr(resolutionStr)
-    }
-
-    Column(
-        modifier = Modifier
-            .width(200.dp)
-            .background(Transparent)
-    ) {
-        LazyColumn(
-            modifier = Modifier
-                .background(
-                    White.copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(5.dp)
-                )
-                .width(120.dp)
-                .align(Alignment.End)
-        ) {
-            items(formats.toList()) { resolution ->
-
-                val resolutionString = if (resolution?.first == 0) {
-                    "Auto"
-                } else {
-                    resolution?.first.toString() + "p "
-                }
-
-                Row(modifier = Modifier
-                    .clickable {
-                        handleResolutionSelect(
-                            resolution?.first ?: 0,
-                            resolution?.second ?: 0,
-                            resolutionString
-                        )
-                    }
-                    .padding(vertical = 1.dp)) {
-                    Text(
-                        text = resolutionString,
-                        modifier = Modifier
-                            .padding(10.dp)
-                            .width(80.dp),
-                        style = TextStyle(
-                            color = White,
-                            fontSize = 12.sp
-                        )
-                    )
-                    if (resolutionString == selectedResolutionStr) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = "Selected",
-                            tint = White,
-                            modifier = Modifier
-                                .size(10.dp)
-                                .align(Alignment.CenterVertically)
-                        )
-                    }
-                }
             }
         }
     }
