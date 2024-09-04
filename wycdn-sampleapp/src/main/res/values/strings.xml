@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">WyCDN Sample App</string>
+    <string name="app_name">WyCDN Sample App (Bitmovin)</string>
     <string name="action_start">Start</string>
     <string name="label_peerid">PeerId: %1$s</string>
     <string name="label_wycdn_environment">WyCDN Environment</string>
