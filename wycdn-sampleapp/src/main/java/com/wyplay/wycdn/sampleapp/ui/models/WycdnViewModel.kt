@@ -128,7 +128,10 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
         // Stop the service
         wycdn.unbindService()
 
-        // Set configuration properties based on provided environment
+        // 1. Set configuration from a file
+        wycdn.setConfigFromAssets("wycdn_config.json")
+
+        // 2. Set configuration properties based on provided environment
         wycdn.setConfigProperty("wycdn.agent.peer_id", peerId)
         wycdn.setConfigProperty("wycdn.agent.stun", wycdnEnv.stunHostname)
         wycdn.setConfigProperty("wycdn.peer.bootstrap", wycdnEnv.bootstrapHostname)
