@@ -9,6 +9,8 @@
 
 package com.wyplay.wycdn.sampleapp.ui.screens
 
+import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,6 +39,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.wyplay.wycdn.sampleapp.BuildConfig
@@ -156,17 +160,37 @@ fun DropdownSettingSelector(
     selectedValue: String?,
     onValueChange: (String) -> Unit
 ) {
+    var envListIsFocused by remember {
+        mutableStateOf(false)
+    }
     var expanded by remember { mutableStateOf(false) }
     val anchor = Modifier
         .fillMaxWidth()
         .clickable { expanded = true }
         .padding(16.dp)
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Text(text = label, style = MaterialTheme.typography.labelLarge)
+    Column(modifier =
+    Modifier
+        .padding(horizontal = 16.dp, vertical = 8.dp)
+        .onFocusChanged { focusState ->
+            envListIsFocused= focusState.isFocused
+            Log.d("dropdown",focusState.isFocused.toString())
+        }
+        .background(
+            if (envListIsFocused) MaterialTheme.colorScheme.primary
+            else Transparent
+        )
+    ) {
+        Text(text = label, style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.background(MaterialTheme.colorScheme.background).fillMaxWidth()
+        )
         Spacer(modifier = Modifier.height(4.dp))
         Row(modifier = anchor, verticalAlignment = Alignment.CenterVertically) {
-            Text(text = selectedValue ?: "Select", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = selectedValue ?: "Select", style = MaterialTheme.typography.bodyLarge,
+                color = if (envListIsFocused) MaterialTheme.colorScheme.onPrimary
+                else MaterialTheme.colorScheme.onSurface
+            )
             Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = "Dropdown")
         }
         DropdownMenu(
@@ -175,11 +199,12 @@ fun DropdownSettingSelector(
         ) {
             items.forEach { item ->
                 DropdownMenuItem(
-                    text = { Text(text = item) },
+                    text = { Text(text = item,
+                    ) },
                     onClick = {
                         onValueChange(item)
                         expanded = false
-                    }
+                    },
                 )
             }
         }

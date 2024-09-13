@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,6 +35,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -50,6 +52,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Gray
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.input.key.onKeyEvent
@@ -251,6 +255,9 @@ fun PlayerComponent(
         val playerFocusRequester = remember { FocusRequester() }
         val showResolutionMenuFlag by resolutionViewModel.menuFlagTV.collectAsState(initial = false)
         val showResolutionBox by resolutionViewModel.resolutionMenuFocus.collectAsState(initial = false)
+        var boxIsFocused by remember {
+            mutableStateOf(false)
+        }
 
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -263,7 +270,14 @@ fun PlayerComponent(
                     modifier = Modifier
                         .focusRequester(buttonFocusRequester)
                         .focusable()
-                        .background(color = Transparent)
+                        .background(
+                            if (boxIsFocused) Color(0, 0, 255, 100)
+                            else Transparent
+                        )
+                        .onFocusChanged { focusState ->
+                            boxIsFocused = focusState.isFocused
+                        }
+
                 ) {
 
                     Button(
@@ -309,6 +323,7 @@ fun PlayerComponent(
                             resolutionViewModel.setFocusOnResolutionMenu(true)
                             true
                         } else {
+                            resolutionViewModel.setFocusOnResolutionMenu(false)
                             playerView.dispatchKeyEvent(keyEvent.nativeKeyEvent)
                         }
                     },
@@ -356,59 +371,92 @@ fun ShowResolutionMenu() {
         resolutionViewModel.setSelectedResolution(Pair(height, width))
         resolutionViewModel.addResolutionFormatStr(resolutionStr)
     }
+    var focusedIndex by remember {
+        mutableStateOf(-1)
+    }
+
+    LaunchedEffect(Unit) {
+        focusedIndex = -1
+    }
 
     Column(
         modifier = Modifier
             .width(200.dp)
-            .background(Transparent)
+            .background(Color(0, 0, 255, 50))
+            .onKeyEvent { keyEvent ->
+                if (keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+                    resolutionViewModel.setFocusOnResolutionMenu(false)
+                    resolutionViewModel.setMenuFlagTV(false)
+                    true
+                }else{
+                    false
+                }
+            }
     ) {
         LazyColumn(
             modifier = Modifier
-                .background(
-                    White.copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(5.dp)
-                )
                 .width(120.dp)
                 .align(Alignment.End)
         ) {
             items(formats.toList()) { resolution ->
+                val index = formats.indexOf(resolution)
+
+                val backgroundcolor = if (index == focusedIndex) MaterialTheme.colorScheme.primary
+                else Transparent
+
+                val textColor = if (index == focusedIndex) MaterialTheme.colorScheme.onPrimary
+                else Gray
 
                 val resolutionString = if (resolution?.first == 0) {
                     "Auto"
                 } else {
                     resolution?.first.toString() + "p "
                 }
-
-                Row(modifier = Modifier
-                    .clickable {
-                        handleResolutionSelect(
-                            resolution?.first ?: 0,
-                            resolution?.second ?: 0,
-                            resolutionString
-                        )
+                Column (modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused) {
+                            focusedIndex = index
+                        }
                     }
-                    .padding(vertical = 1.dp)) {
-                    Text(
-                        text = resolutionString,
-                        modifier = Modifier
-                            .padding(10.dp)
-                            .width(80.dp),
-                        style = TextStyle(
-                            color = White,
-                            fontSize = 12.sp
-                        )
-                    )
-                    if (resolutionString == selectedResolutionStr) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = "Selected",
-                            tint = White,
+                    .focusable()
+                ){
+                    Row(modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            handleResolutionSelect(
+                                resolution?.first ?: 0,
+                                resolution?.second ?: 0,
+                                resolutionString
+                            )
+                        }
+                        .padding(vertical = 1.dp)
+                        .background(backgroundcolor)
+                    ) {
+                        Text(
+                            text = resolutionString,
                             modifier = Modifier
-                                .size(10.dp)
-                                .align(Alignment.CenterVertically)
+                                .padding(10.dp)
+                                .width(80.dp),
+                            style = TextStyle(
+                                color = textColor,
+                                fontSize = 12.sp
+                            )
                         )
+                        if (resolutionString == selectedResolutionStr) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = "Selected",
+                                tint = White,
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .align(Alignment.CenterVertically)
+                            )
+                        }
                     }
                 }
+
+
             }
         }
     }
