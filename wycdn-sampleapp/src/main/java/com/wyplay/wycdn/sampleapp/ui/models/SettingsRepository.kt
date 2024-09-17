@@ -68,6 +68,27 @@ class SettingsRepository(
     }
 
     /**
+     * A [Flow] of Boolean representing whether to enable WyCDN download metrics. This flow emits
+     * the current value stored in the settings, allowing observers to react to changes.
+     *
+     * If the value does not exist, false is emitted as a fallback.
+     */
+    val wycdnDownloadMetricsEnabled: Flow<Boolean> = dataStore.data.map { preferences ->
+        preferences[WYCDN_DOWNLOAD_METRICS_ENABLED] ?: false
+    }
+
+    /**
+     * Updates the WyCDN download metrics enabled setting.
+     *
+     * @param enable The Boolean value to be stored as the new setting.
+     */
+    suspend fun setWycdnDownloadMetricsEnabled(enable: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[WYCDN_DOWNLOAD_METRICS_ENABLED] = enable
+        }
+    }
+
+    /**
      * A [Flow] of Boolean representing whether to enable WyCDN debug info. This flow emits
      * the current value stored in the settings, allowing observers to react to changes.
      *
@@ -91,6 +112,9 @@ class SettingsRepository(
     companion object {
         /** [Preferences.Key] used to store and retrieve the WyCDN environment setting. */
         internal val WYCDN_ENVIRONMENT_KEY = stringPreferencesKey("wycdn_environment")
+
+        /** [Preferences.Key] used to store and retrieve the WyCDN download metrics enabled setting. */
+        internal val WYCDN_DOWNLOAD_METRICS_ENABLED = booleanPreferencesKey("wycdn_download_metrics_enabled")
 
         /** [Preferences.Key] used to store and retrieve the WyCDN debug info enabled setting. */
         internal val WYCDN_DEBUG_INFO_ENABLED_KEY = booleanPreferencesKey("wycdn_debug_info_enabled")

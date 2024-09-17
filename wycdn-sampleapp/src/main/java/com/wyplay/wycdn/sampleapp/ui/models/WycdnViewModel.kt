@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.launch
 
@@ -66,7 +67,7 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         // Start observing WyCDN environment settings changes
-        observeWycdnEnvChanges()
+        observeWycdnSettingsChanges()
 
         // Update WyCDN debug information periodically
         updateWycdnDebugInfo()
@@ -78,28 +79,52 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Monitors changes to the WyCDN environment setting and triggers a restart of the WyCDN service
-     * whenever an update to the environment setting is observed.
+     * Combines multiple flows into a single flow that emits a list of the latest values
+     * from each flow, with each flow contributing a value to the list.
+     *
+     * @param flows A variable number of flows to be combined.
+     * @return A flow that emits a list of the latest values from each of the input flows.
+     */
+    private inline fun <reified T> combineFlows(vararg flows: Flow<T>): Flow<List<T>> {
+        return combine(flows.toList()) { it.toList() }
+    }
+
+    /**
+     * Monitors changes to the WyCDN settings and triggers a restart of the WyCDN service
+     * whenever an update is observed.
      *
      * It also implicitly kick-starts the service when the ViewModel is first initialized.
      */
-    private fun observeWycdnEnvChanges() {
+    private fun observeWycdnSettingsChanges() {
         // We use a viewModelScope to launch a coroutine, ensuring that the observation and
         // subsequent service restarts are bound to the lifecycle of the ViewModel.
         viewModelScope.launch {
             val app: SampleApp = getApplication()
-            app.settingsRepository.wycdnEnvironment.collectLatest { wycdnEnv ->
-                // Restart the WyCDN service with the new environment
-                restartService(wycdnEnv)
+
+            // Combine settings flows into one
+            val combinedSettingsFlow = combineFlows(
+                app.settingsRepository.wycdnEnvironment,
+                app.settingsRepository.wycdnDownloadMetricsEnabled
+            )
+
+            // Collect the latest values of the combined settings whenever any of the flows emit a new value
+            combinedSettingsFlow.collectLatest { settings ->
+                // Destructure the list back into specific settings
+                val wycdnEnv = settings[0] as WycdnEnv
+                val wycdnDownloadMetricsEnabled = settings[1] as Boolean
+
+                // Restart the WyCDN service with the new settings
+                restartService(wycdnEnv, wycdnDownloadMetricsEnabled)
             }
         }
     }
 
     /**
-     * Restarts theWyCDN service using the provided environment.
+     * Restarts the WyCDN service using the provided settings.
      * @param wycdnEnv The environment to use.
+     * @param wycdnDownloadMetricsEnabled Boolean indicating if download metrics should be enabled.
      */
-    private fun restartService(wycdnEnv: WycdnEnv) {
+    private fun restartService(wycdnEnv: WycdnEnv, wycdnDownloadMetricsEnabled: Boolean) {
         // Stop the service
         wycdn.unbindService()
 
@@ -109,6 +134,12 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
         wycdn.setConfigProperty("wycdn.peer.bootstrap", wycdnEnv.bootstrapHostname)
         wycdn.setConfigProperty("wycdn.influxdb.host", wycdnEnv.influxdbHostname)
         wycdn.setConfigProperty("wycdn.graylog.host", wycdnEnv.graylogHostname)
+
+        // Set the download metrics enabled property
+        wycdn.setConfigProperty(
+            "wycdn.influxdb.send_download_metrics",
+            if (wycdnDownloadMetricsEnabled) "1" else "0"
+        )
 
         // Allow calling REST routes for debugging
         wycdn.setConfigProperty("wycdn.proxy.server_address", "0.0.0.0")

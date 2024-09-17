@@ -77,6 +77,18 @@ fun SettingsScreen(
         selectedEnv = currentEnv
     }
 
+    // Collect the current download metrics enabled state as state for composable to react to changes
+    val wycdnDownloadMetricsEnabled by settingsViewModel.wycdnDownloadMetricsEnabled.collectAsState(initial = false)
+
+    // Local state to store the download metrics enabled state, initialized with wycdnDownloadMetricsEnabled
+    var downloadMetricsEnabled by remember { mutableStateOf(wycdnDownloadMetricsEnabled) }
+
+    // Observe changes in wycdnDownloadMetricsEnabled and update downloadMetricsEnabled accordingly
+    // This is needed as it wycdnDownloadMetricsEnabled is collected asynchronously
+    LaunchedEffect(wycdnDownloadMetricsEnabled) {
+        downloadMetricsEnabled = wycdnDownloadMetricsEnabled
+    }
+
     // Collect the current debug info enabled state as state for composable to react to changes
     val wycdnDebugInfoEnabled by settingsViewModel.wycdnDebugInfoEnabled.collectAsState(initial = false)
 
@@ -116,6 +128,23 @@ fun SettingsScreen(
                 }
             )
 
+            // Send Download metric enabled switch
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.label_download_metrics_enabled)
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Switch(
+                    checked = downloadMetricsEnabled,
+                    onCheckedChange = {
+                        downloadMetricsEnabled = it
+                    }
+                )
+            }
+
             // WyCDN debug info enabled switch
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -132,14 +161,16 @@ fun SettingsScreen(
                     }
                 )
             }
-
+            
             Spacer(modifier = Modifier.weight(1f)) // This pushes the button to the bottom
 
             Button(
                 onClick = {
                     // Update the settings
                     settingsViewModel.setWycdnEnvironment(selectedEnv)
+                    settingsViewModel.setWycdnDownloadMetricsEnabled(downloadMetricsEnabled)
                     settingsViewModel.setWycdnDebugInfoEnabled(debugInfoEnabled)
+
                     // Notify start button has been clicked
                     onStartButtonClick()
                 },

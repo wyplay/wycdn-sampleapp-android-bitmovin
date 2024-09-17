@@ -49,6 +49,22 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     }
 
     /**
+     * Gets the current value of whether WyCDN download metrics is enabled.
+     */
+    val wycdnDownloadMetricsEnabled: Flow<Boolean> = repository.wycdnDownloadMetricsEnabled
+
+    /**
+     * Sets the value of whether WyCDN download metrics is enabled.
+     *
+     * @param enable The new Boolean value to set.
+     */
+    fun setWycdnDownloadMetricsEnabled(enabled: Boolean) {
+       viewModelScope.launch {
+           repository.setWycdnDownloadMetricsEnabled(enabled)
+       }
+    }
+
+    /**
      * Gets the current value of whether WyCDN debug info is enabled.
      */
     val wycdnDebugInfoEnabled: Flow<Boolean> = repository.wycdnDebugInfoEnabled
