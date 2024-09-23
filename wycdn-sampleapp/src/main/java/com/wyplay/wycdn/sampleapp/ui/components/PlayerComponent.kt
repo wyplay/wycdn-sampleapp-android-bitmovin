@@ -112,7 +112,11 @@ fun PlayerComponent(
     playerView.useController = true
     playerView.controllerAutoShow = true
 
-    val trackSelector = DefaultTrackSelector(context).apply { }
+    val trackSelector = DefaultTrackSelector(context).apply {
+        parameters = buildUponParameters()
+            .setTunnelingEnabled(true)
+            .build()
+    }
     val resolutionControl = ResolutionControl(trackSelector)
     val selectedResolution by resolutionViewModel.selectedResolution.collectAsState()
     val trackInfoList by resolutionViewModel.trackInfoList.collectAsState()
