@@ -9,6 +9,7 @@
 
 package com.wyplay.wycdn.sampleapp.ui.components
 
+import android.util.EventLog
 import android.util.Log
 import android.view.KeyEvent
 import androidx.annotation.OptIn
@@ -77,6 +78,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import androidx.media3.exoplayer.util.EventLogger
 import androidx.media3.ui.PlayerView
 import com.wyplay.wycdn.sampleapp.ui.data.TrackInfo
 import com.wyplay.wycdn.sampleapp.ui.models.ResolutionViewModel
@@ -120,6 +122,8 @@ fun PlayerComponent(
     val resolutionControl = ResolutionControl(trackSelector)
     val selectedResolution by resolutionViewModel.selectedResolution.collectAsState()
     val trackInfoList by resolutionViewModel.trackInfoList.collectAsState()
+
+    val eventLogger = EventLogger()
 
     LaunchedEffect(selectedResolution) {
         if (selectedResolution != null) {
@@ -166,6 +170,7 @@ fun PlayerComponent(
                             PlaybackException.ERROR_CODE_IO_UNSPECIFIED,
                             PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED,
                             PlaybackException.ERROR_CODE_DECODING_FAILED -> {
+                                Log.d("player", "PlaybackException: ${error.message}")
                                 seekToDefaultPosition()
                                 prepare()
                             }
@@ -210,6 +215,7 @@ fun PlayerComponent(
 
                     override fun onPlaybackStateChanged(playbackState: Int) {
                         super.onPlaybackStateChanged(playbackState)
+                        Log.d("player", "playbackState: $playbackState")
                         when (playbackState) {
                             Player.STATE_READY -> {
                                 resolutionViewModel.setLoaderFlag(false)
@@ -217,6 +223,8 @@ fun PlayerComponent(
                         }
                     }
                 })
+
+                addAnalyticsListener(eventLogger)
                 // Prepare the player
                 prepare()
             }
