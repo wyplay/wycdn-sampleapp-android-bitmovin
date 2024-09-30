@@ -11,7 +11,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.wyplay.wycdn.sampleapp"
+        applicationId = "com.wyplay.wycdn.sampleapp.bitmovin"
         minSdk = 28
         targetSdk = 34
         versionCode = project.findProperty("versionCode")?.toString()?.toInt() ?: 1
