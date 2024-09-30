@@ -29,5 +29,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "wycdn-sampleapp-android"
+rootProject.name = "wycdn-sampleapp-android-bitmovin"
 include(":wycdn-sampleapp")
+project(":wycdn-sampleapp").name = "wycdn-sampleapp-bitmovin"

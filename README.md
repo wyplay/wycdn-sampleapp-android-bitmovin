@@ -1,4 +1,4 @@
-# WyCDN Sample App for Android
+# WyCDN Sample App for Android (Bitmovin)
 
 This sample application provides a demonstration of the capabilities and usage of the WyCDN SDK for Android developers.
 It is designed to help you integrate the WyCDN service into your Android application effectively.
