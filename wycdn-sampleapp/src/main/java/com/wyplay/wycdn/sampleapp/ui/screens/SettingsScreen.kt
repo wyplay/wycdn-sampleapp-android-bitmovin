@@ -40,7 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color.Companion.Transparent
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.wyplay.wycdn.sampleapp.BuildConfig
@@ -247,6 +247,7 @@ fun DropdownSettingSelector(
     var envListIsFocused by remember {
         mutableStateOf(false)
     }
+
     var expanded by remember { mutableStateOf(false) }
     val anchor = Modifier
         .fillMaxWidth()
@@ -262,16 +263,16 @@ fun DropdownSettingSelector(
         }
         .background(
             if (envListIsFocused) MaterialTheme.colorScheme.primary
-            else Transparent
+            else Color.Transparent
         )
     ) {
-        Text(text = label, style = MaterialTheme.typography.labelLarge,
+        Text(
+            text = label, style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.background(MaterialTheme.colorScheme.background).fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(4.dp))
         Row(modifier = anchor, verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = selectedValue ?: "Select", style = MaterialTheme.typography.bodyLarge,
+            Text(text = selectedValue ?: "Select", style = MaterialTheme.typography.bodyLarge,
                 color = if (envListIsFocused) MaterialTheme.colorScheme.onPrimary
                 else MaterialTheme.colorScheme.onSurface
             )

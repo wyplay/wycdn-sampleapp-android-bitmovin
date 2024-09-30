@@ -16,6 +16,8 @@ Below, you will find instructions on how to set up and run the sample app.
 2. Open the project in Android Studio.
 3. Build the project by selecting 'Build -> Make Project'.
 
+Ensure that a valid Bitmovin player license key is defined in project `gradle.properties` file.
+
 ### Running the App
 
 1. Connect your Android device via USB or use an Android emulator.
