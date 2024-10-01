@@ -137,8 +137,6 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
         wycdn.setConfigProperty("wycdn.peer.bootstrap", wycdnEnv.bootstrapHostname)
         wycdn.setConfigProperty("wycdn.influxdb.host", wycdnEnv.influxdbHostname)
         wycdn.setConfigProperty("wycdn.graylog.host", wycdnEnv.graylogHostname)
-        wycdn.setConfigProperty("wycdn.agent.log_level", "debug")
-        wycdn.setConfigProperty("wycdn.agent.debug_juice", "1")
 
         // Set the download metrics enabled property
         wycdn.setConfigProperty(
