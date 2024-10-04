@@ -137,6 +137,8 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
         wycdn.setConfigProperty("wycdn.peer.bootstrap", wycdnEnv.bootstrapHostname)
         wycdn.setConfigProperty("wycdn.influxdb.host", wycdnEnv.influxdbHostname)
         wycdn.setConfigProperty("wycdn.graylog.host", wycdnEnv.graylogHostname)
+        wycdn.setConfigProperty("wycdn.config.remote.server", wycdnEnv.remoteConfigHostname)
+        wycdn.setConfigProperty("wycdn.config.remote.refresh_period_sec", wycdnEnv.remoteConfigPeriodSec)
 
         // Set the download metrics enabled property
         wycdn.setConfigProperty(

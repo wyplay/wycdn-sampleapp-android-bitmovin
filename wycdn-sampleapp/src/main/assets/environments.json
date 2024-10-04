@@ -7,7 +7,9 @@
       "bootstrapHostname": "node0.poc2.wycdn.wyplay.com",
       "stunHostname": "stun.poc2.wycdn.wyplay.com",
       "influxdbHostname": "telegraf.poc2.wycdn.wyplay.com",
-      "graylogHostname": "graylog.poc2.wycdn.wyplay.com"
+      "graylogHostname": "graylog.poc2.wycdn.wyplay.com",
+      "remoteConfigHostname": "node0.poc2.wycdn.wyplay.com",
+      "remoteConfigPeriodSec": "30"
     }
   ]
 }

@@ -58,7 +58,9 @@ class WycdnEnvDataSource(private val assets: AssetManager) {
                 bootstrapHostname = jsonObject.getString("bootstrapHostname"),
                 stunHostname = jsonObject.getString("stunHostname"),
                 influxdbHostname = jsonObject.getString("influxdbHostname"),
-                graylogHostname = jsonObject.getString("graylogHostname")
+                graylogHostname = jsonObject.getString("graylogHostname"),
+                remoteConfigHostname = jsonObject.getString("remoteConfigHostname"),
+                remoteConfigPeriodSec = jsonObject.getString("remoteConfigPeriodSec"),
             )
             envConfigList.add(config)
         }
@@ -105,6 +107,8 @@ data class WycdnEnvList(
  * @property stunHostname Hostname of the STUN server.
  * @property influxdbHostname Hostname of the InfluxDB Telegraf endpoint.
  * @property graylogHostname Hostname of the Graylog endpoint.
+ * @property remoteConfigHostname Hostname of the remote config server.
+ * @property remoteConfigPeriodSec Period of the remote config refresh in seconds (0 to disable).
  */
 data class WycdnEnv(
     val id: String,
@@ -112,7 +116,9 @@ data class WycdnEnv(
     val bootstrapHostname: String,
     val stunHostname: String,
     val influxdbHostname: String,
-    val graylogHostname: String
+    val graylogHostname: String,
+    val remoteConfigHostname: String,
+    val remoteConfigPeriodSec: String,
 )
 
 /**
