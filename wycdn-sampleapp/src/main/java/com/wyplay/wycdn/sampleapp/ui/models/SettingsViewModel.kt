@@ -16,7 +16,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.wyplay.wycdn.sampleapp.SampleApp
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 /**
@@ -35,7 +35,7 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     /**
      * Gets the environment to use for WyCDN configuration.
      */
-    val wycdnEnvironment: Flow<WycdnEnv> = repository.wycdnEnvironment
+    val wycdnEnvironment: StateFlow<WycdnEnv> = repository.wycdnEnvironment
 
     /**
      * Sets the environment to use for WyCDN configuration.
@@ -51,7 +51,7 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     /**
      * Gets the current value of whether WyCDN download metrics is enabled.
      */
-    val wycdnDownloadMetricsEnabled: Flow<Boolean> = repository.wycdnDownloadMetricsEnabled
+    val wycdnDownloadMetricsEnabled: StateFlow<Boolean> = repository.wycdnDownloadMetricsEnabled
 
     /**
      * Sets the value of whether WyCDN download metrics is enabled.
@@ -67,7 +67,7 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     /**
      * Gets the current value of whether WyCDN debug info is enabled.
      */
-    val wycdnDebugInfoEnabled: Flow<Boolean> = repository.wycdnDebugInfoEnabled
+    val wycdnDebugInfoEnabled: StateFlow<Boolean> = repository.wycdnDebugInfoEnabled
 
     /**
      * Sets the value of whether WyCDN debug info is enabled.

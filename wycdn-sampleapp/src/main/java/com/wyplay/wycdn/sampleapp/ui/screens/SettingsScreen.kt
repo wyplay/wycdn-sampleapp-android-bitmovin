@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import com.wyplay.wycdn.sampleapp.BuildConfig
 import com.wyplay.wycdn.sampleapp.R
 import com.wyplay.wycdn.sampleapp.ui.models.SettingsViewModel
+import com.wyplay.wycdn.sampleapp.ui.models.WycdnViewModel
 
 /**
  * Settings screen allowing to update application settings.
@@ -59,6 +60,7 @@ import com.wyplay.wycdn.sampleapp.ui.models.SettingsViewModel
 @Composable
 fun SettingsScreen(
     settingsViewModel: SettingsViewModel,
+    wycdnViewModel: WycdnViewModel, // Add this line
     peerId: String,
     onStartButtonClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -161,7 +163,7 @@ fun SettingsScreen(
                     }
                 )
             }
-            
+
             Spacer(modifier = Modifier.weight(1f)) // This pushes the button to the bottom
 
             Button(
@@ -170,6 +172,9 @@ fun SettingsScreen(
                     settingsViewModel.setWycdnEnvironment(selectedEnv)
                     settingsViewModel.setWycdnDownloadMetricsEnabled(downloadMetricsEnabled)
                     settingsViewModel.setWycdnDebugInfoEnabled(debugInfoEnabled)
+
+                    // Restart the service with the updated settings
+                    wycdnViewModel.restartService()
 
                     // Notify start button has been clicked
                     onStartButtonClick()

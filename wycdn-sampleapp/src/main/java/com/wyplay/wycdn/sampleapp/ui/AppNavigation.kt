@@ -73,6 +73,7 @@ fun AppNavigation() {
         composable(route = NavRoute.SettingsScreen.name) {
             SettingsScreen(
                 settingsViewModel = settingsViewModel,
+                wycdnViewModel = wycdnViewModel,
                 peerId = wycdnViewModel.peerId,
                 onStartButtonClick = {
                     // Navigate to the MediaChooserScreen when the "Start" button is clicked

@@ -16,8 +16,14 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 // See: https://developer.android.com/topic/libraries/architecture/datastore
 
@@ -45,16 +51,16 @@ class SettingsRepository(
         wycdnEnvDataSource.getEnvList()
     }
 
+    // Backing property for the WyCDN environment setting, initially set to the default env.
+    private val _wycdnEnvironment = MutableStateFlow(wycdnEnvironmentList.defaultEnv)
+
     /**
      * A [Flow] of [WycdnEnv] representing the current WyCDN environment setting. This flow emits
      * the current environment value stored in the settings, allowing observers to react to changes.
      *
-     * If the environment value does not exist or is invalid, [WycdnEnv.default] is emitted as a fallback.
+     * If the environment value does not exist or is invalid, a default value is emitted as a fallback.
      */
-    val wycdnEnvironment: Flow<WycdnEnv> = dataStore.data.map { preferences ->
-        val envId = preferences[WYCDN_ENVIRONMENT_KEY]
-        wycdnEnvironmentList.envList.firstOrNull { it.id == envId } ?: wycdnEnvironmentList.defaultEnv
-    }
+    val wycdnEnvironment: StateFlow<WycdnEnv> = _wycdnEnvironment.asStateFlow()
 
     /**
      * Updates the WyCDN environment setting.
@@ -62,10 +68,14 @@ class SettingsRepository(
      * @param env The [WycdnEnv] value to be stored as the new environment setting.
      */
     suspend fun setWycdnEnvironment(env: WycdnEnv) {
+        _wycdnEnvironment.value = env
         dataStore.edit { preferences ->
             preferences[WYCDN_ENVIRONMENT_KEY] = env.id
         }
     }
+
+    // Backing property for the WyCDN download metrics enabled setting, initially set to false.
+    private val _wycdnDownloadMetricsEnabled = MutableStateFlow(false)
 
     /**
      * A [Flow] of Boolean representing whether to enable WyCDN download metrics. This flow emits
@@ -73,9 +83,7 @@ class SettingsRepository(
      *
      * If the value does not exist, false is emitted as a fallback.
      */
-    val wycdnDownloadMetricsEnabled: Flow<Boolean> = dataStore.data.map { preferences ->
-        preferences[WYCDN_DOWNLOAD_METRICS_ENABLED] ?: false
-    }
+    val wycdnDownloadMetricsEnabled: StateFlow<Boolean> = _wycdnDownloadMetricsEnabled.asStateFlow()
 
     /**
      * Updates the WyCDN download metrics enabled setting.
@@ -83,10 +91,14 @@ class SettingsRepository(
      * @param enable The Boolean value to be stored as the new setting.
      */
     suspend fun setWycdnDownloadMetricsEnabled(enable: Boolean) {
+        _wycdnDownloadMetricsEnabled.value = enable
         dataStore.edit { preferences ->
             preferences[WYCDN_DOWNLOAD_METRICS_ENABLED] = enable
         }
     }
+
+    // Backing property for the WyCDN debug info enabled setting, initially set to false.
+    private val _wycdnDebugInfoEnabled = MutableStateFlow(false)
 
     /**
      * A [Flow] of Boolean representing whether to enable WyCDN debug info. This flow emits
@@ -94,9 +106,7 @@ class SettingsRepository(
      *
      * If the value does not exist, false is emitted as a fallback.
      */
-    val wycdnDebugInfoEnabled: Flow<Boolean> = dataStore.data.map { preferences ->
-        preferences[WYCDN_DEBUG_INFO_ENABLED_KEY] ?: false
-    }
+    val wycdnDebugInfoEnabled: StateFlow<Boolean> = _wycdnDebugInfoEnabled.asStateFlow()
 
     /**
      * Updates the WyCDN debug info enabled setting.
@@ -104,8 +114,29 @@ class SettingsRepository(
      * @param enable The Boolean value to be stored as the new setting.
      */
     suspend fun setWycdnDebugInfoEnabled(enable: Boolean) {
+        _wycdnDebugInfoEnabled.value = enable
         dataStore.edit { preferences ->
             preferences[WYCDN_DEBUG_INFO_ENABLED_KEY] = enable
+        }
+    }
+
+    init {
+        // Load settings from the DataStore when application starts
+        CoroutineScope(Dispatchers.IO).launch {
+            val preferences = dataStore.data.first()
+
+            preferences[WYCDN_ENVIRONMENT_KEY]?.let { envId ->
+                _wycdnEnvironment.value = wycdnEnvironmentList.envList.firstOrNull { it.id == envId }
+                    ?: wycdnEnvironmentList.defaultEnv
+            }
+
+            preferences[WYCDN_DOWNLOAD_METRICS_ENABLED]?.let { enabled ->
+                _wycdnDownloadMetricsEnabled.value = enabled
+            }
+
+            preferences[WYCDN_DEBUG_INFO_ENABLED_KEY]?.let { enabled ->
+                _wycdnDebugInfoEnabled.value = enabled
+            }
         }
     }
 

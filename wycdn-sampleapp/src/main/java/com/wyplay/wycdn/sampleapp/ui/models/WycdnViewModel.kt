@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.launch
@@ -66,9 +65,6 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     init {
-        // Start observing WyCDN environment settings changes
-        observeWycdnSettingsChanges()
-
         // Update WyCDN debug information periodically
         updateWycdnDebugInfo()
     }
@@ -79,78 +75,45 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Combines multiple flows into a single flow that emits a list of the latest values
-     * from each flow, with each flow contributing a value to the list.
-     *
-     * @param flows A variable number of flows to be combined.
-     * @return A flow that emits a list of the latest values from each of the input flows.
+     * Restarts the WyCDN service using current settings.
      */
-    private inline fun <reified T> combineFlows(vararg flows: Flow<T>): Flow<List<T>> {
-        return combine(flows.toList()) { it.toList() }
-    }
-
-    /**
-     * Monitors changes to the WyCDN settings and triggers a restart of the WyCDN service
-     * whenever an update is observed.
-     *
-     * It also implicitly kick-starts the service when the ViewModel is first initialized.
-     */
-    private fun observeWycdnSettingsChanges() {
-        // We use a viewModelScope to launch a coroutine, ensuring that the observation and
-        // subsequent service restarts are bound to the lifecycle of the ViewModel.
+    fun restartService() {
+        // We use a viewModelScope to launch a coroutine, ensuring that the collection of settings
+        // and the subsequent service restart are bound to the lifecycle of the ViewModel.
         viewModelScope.launch {
             val app: SampleApp = getApplication()
 
-            // Combine settings flows into one
-            val combinedSettingsFlow = combineFlows(
-                app.settingsRepository.wycdnEnvironment,
-                app.settingsRepository.wycdnDownloadMetricsEnabled
+            // Collect settings values
+            val wycdnEnv = app.settingsRepository.wycdnEnvironment.value
+            val wycdnDownloadMetricsEnabled = app.settingsRepository.wycdnDownloadMetricsEnabled.value
+
+            // Stop the service
+            wycdn.unbindService()
+
+            // 1. Set configuration from a file
+            wycdn.setConfigFromAssets("wycdn_config.json")
+
+            // 2. Set configuration properties based on the environment
+            wycdn.setConfigProperty("wycdn.agent.peer_id", peerId)
+            wycdn.setConfigProperty("wycdn.agent.stun", wycdnEnv.stunHostname)
+            wycdn.setConfigProperty("wycdn.peer.bootstrap", wycdnEnv.bootstrapHostname)
+            wycdn.setConfigProperty("wycdn.influxdb.host", wycdnEnv.influxdbHostname)
+            wycdn.setConfigProperty("wycdn.graylog.host", wycdnEnv.graylogHostname)
+            wycdn.setConfigProperty("wycdn.config.remote.server", wycdnEnv.remoteConfigHostname)
+            wycdn.setConfigProperty("wycdn.config.remote.refresh_period_sec", wycdnEnv.remoteConfigPeriodSec)
+
+            // Set the download metrics enabled property
+            wycdn.setConfigProperty(
+                "wycdn.influxdb.send_download_metrics",
+                if (wycdnDownloadMetricsEnabled) "1" else "0"
             )
 
-            // Collect the latest values of the combined settings whenever any of the flows emit a new value
-            combinedSettingsFlow.collectLatest { settings ->
-                // Destructure the list back into specific settings
-                val wycdnEnv = settings[0] as WycdnEnv
-                val wycdnDownloadMetricsEnabled = settings[1] as Boolean
+            // Allow calling REST routes for debugging
+            wycdn.setConfigProperty("wycdn.proxy.server_address", "0.0.0.0")
 
-                // Restart the WyCDN service with the new settings
-                restartService(wycdnEnv, wycdnDownloadMetricsEnabled)
-            }
+            // Start the service
+            wycdn.bindService()
         }
-    }
-
-    /**
-     * Restarts the WyCDN service using the provided settings.
-     * @param wycdnEnv The environment to use.
-     * @param wycdnDownloadMetricsEnabled Boolean indicating if download metrics should be enabled.
-     */
-    private fun restartService(wycdnEnv: WycdnEnv, wycdnDownloadMetricsEnabled: Boolean) {
-        // Stop the service
-        wycdn.unbindService()
-
-        // 1. Set configuration from a file
-        wycdn.setConfigFromAssets("wycdn_config.json")
-
-        // 2. Set configuration properties based on provided environment
-        wycdn.setConfigProperty("wycdn.agent.peer_id", peerId)
-        wycdn.setConfigProperty("wycdn.agent.stun", wycdnEnv.stunHostname)
-        wycdn.setConfigProperty("wycdn.peer.bootstrap", wycdnEnv.bootstrapHostname)
-        wycdn.setConfigProperty("wycdn.influxdb.host", wycdnEnv.influxdbHostname)
-        wycdn.setConfigProperty("wycdn.graylog.host", wycdnEnv.graylogHostname)
-        wycdn.setConfigProperty("wycdn.config.remote.server", wycdnEnv.remoteConfigHostname)
-        wycdn.setConfigProperty("wycdn.config.remote.refresh_period_sec", wycdnEnv.remoteConfigPeriodSec)
-
-        // Set the download metrics enabled property
-        wycdn.setConfigProperty(
-            "wycdn.influxdb.send_download_metrics",
-            if (wycdnDownloadMetricsEnabled) "1" else "0"
-        )
-
-        // Allow calling REST routes for debugging
-        wycdn.setConfigProperty("wycdn.proxy.server_address", "0.0.0.0")
-
-        // Start the service
-        wycdn.bindService()
     }
 
     /**
