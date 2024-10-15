@@ -57,6 +57,8 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
      */
     val debugInfoState: StateFlow<WycdnDebugInfoState> = _debugInfoState.asStateFlow()
 
+    var influxdbHostname: String = ""
+
     /** Identifier to use for our peer. */
     val peerId: String by lazy {
         val app: SampleApp = getApplication()
@@ -101,6 +103,8 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
             wycdn.setConfigProperty("wycdn.graylog.host", wycdnEnv.graylogHostname)
             wycdn.setConfigProperty("wycdn.config.remote.server", wycdnEnv.remoteConfigHostname)
             wycdn.setConfigProperty("wycdn.config.remote.refresh_period_sec", wycdnEnv.remoteConfigPeriodSec)
+
+            influxdbHostname = wycdnEnv.influxdbHostname
 
             // Set the download metrics enabled property
             wycdn.setConfigProperty(

@@ -66,9 +66,23 @@ import com.wyplay.wycdn.sampleapp.ui.models.MediaListState
 import com.wyplay.wycdn.sampleapp.ui.models.ResolutionViewModel
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnDebugInfo
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnDebugInfoState
+import com.wyplay.wycdn.sampleapp.ui.models.WycdnViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.OutputStreamWriter
+import java.security.KeyStore
+import java.util.concurrent.ConcurrentLinkedQueue
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSocket
+import javax.net.ssl.SSLSocketFactory
+import javax.net.ssl.TrustManagerFactory
 
 /**
  * Media player screen responsible for rendering the ExoPlayer view.
@@ -77,7 +91,8 @@ import kotlinx.coroutines.flow.asStateFlow
  *                       has encountered an error, or is ready for display.
  * @param mediaIndex Index of the currently selected media item within the media list.
  * @param debugInfoState State of WyCDN debug information, encapsulating whether the debug info is loading,
- *  *                    is unavailable because of an error, or is ready for display.
+ *                       is unavailable because of an error, or is ready for display.
+ * @param playerInfoViewModel Player info view model.
  * @param modifier An optional [Modifier] for this composable.
  */
 @Composable
@@ -85,9 +100,9 @@ fun PlayerScreen(
     mediaListState: MediaListState,
     mediaIndex: Int,
     debugInfoState: WycdnDebugInfoState,
-    modifier: Modifier = Modifier,
-    playerInfoViewModel: PlayerInfoViewModel = viewModel(),
-) {
+    playerInfoViewModel: PlayerInfoViewModel,
+    modifier: Modifier = Modifier
+    ) {
     val activity = (LocalContext.current as? MainActivity)
 
     DisposableEffect(Unit) {
@@ -127,15 +142,99 @@ fun PlayerScreen(
 
 }
 
-data class PlayerInfo(val resolution: String)
+class PlayerInfoSender(private var wycdnViewModel: WycdnViewModel)
+{
+    private val metricQueue: ConcurrentLinkedQueue<String> = ConcurrentLinkedQueue()
 
-class PlayerInfoViewModel : ViewModel() {
-    private val _playerInfo = MutableStateFlow(PlayerInfo("0x0"))
+    init {
+        startQueueProcessor()
+    }
+
+    private fun createTLSSocket(): SSLSocket {
+        val sslContext = SSLContext.getInstance("TLS")
+        val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+        trustManagerFactory.init(null as KeyStore?)
+
+        val trustManagers = trustManagerFactory.trustManagers
+        sslContext.init(null, trustManagers, null)
+
+        val factory = sslContext.socketFactory as SSLSocketFactory
+        val socket = factory.createSocket(wycdnViewModel.influxdbHostname, 8094) as SSLSocket
+        socket.soTimeout = 5000
+        socket.sendBufferSize = 65536
+
+        return socket
+    }
+
+    private suspend fun sendMetrics() {
+        try {
+            val socket = createTLSSocket()
+
+            if (!socket.isConnected)
+                return
+
+            val writer = OutputStreamWriter(socket.outputStream)
+
+            while (metricQueue.isNotEmpty()) {
+                val metric = metricQueue.poll() ?: break
+
+                try {
+                    withContext(Dispatchers.IO) {
+                        writer.write(metric)
+                        writer.write(10)
+                        writer.flush()
+                    }
+                    delay(50L)
+                } catch (e: Exception) {
+                    metricQueue.offer(metric);
+                    break
+                }
+            }
+
+            withContext(Dispatchers.IO) {
+                writer.close()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun startQueueProcessor() {
+        GlobalScope.launch(Dispatchers.IO) {
+            while (isActive) {
+                sendMetrics()
+                delay(10000L)
+            }
+        }
+    }
+
+    fun enqueueMetrics(playerInfo: PlayerInfo) {
+        if (playerInfo.resolution == "0x0" || playerInfo.state == -1)
+            return
+
+        val metric =
+            "player,peerId=${wycdnViewModel.peerId} resolution=\"${playerInfo.resolution}\",state=${playerInfo.state} ${System.currentTimeMillis() * 1000000}"
+
+        metricQueue.offer(metric)
+    }
+}
+
+data class PlayerInfo(var resolution: String, var state: Int)
+
+class PlayerInfoViewModel(private val playerInfoSender: PlayerInfoSender) : ViewModel() {
+    private val _playerInfo = MutableStateFlow(PlayerInfo("0x0", -1))
     val playerInfo: StateFlow<PlayerInfo> = _playerInfo.asStateFlow()
 
-    fun updatePlayerInfo(newPlayerInfo: PlayerInfo) {
-        _playerInfo.value = newPlayerInfo
+    fun updateResolution(resolution: String) {
+        _playerInfo.value.resolution = resolution
+        playerInfoSender.enqueueMetrics(_playerInfo.value)
     }
+
+    fun updateState(state: Int) {
+        _playerInfo.value.state = state
+        playerInfoSender.enqueueMetrics(_playerInfo.value)
+    }
+
 }
 
 @Composable
@@ -171,7 +270,7 @@ private fun PlayerSurface(
     playerInfoViewModel: PlayerInfoViewModel = viewModel(),
 ) {
 
-    val playerInfo by playerInfoViewModel.playerInfo.collectAsState(initial = PlayerInfo("0x0"))
+    val playerInfo by playerInfoViewModel.playerInfo.collectAsState(initial = PlayerInfo("0x0", -1))
 
     val resolutionViewModel: ResolutionViewModel = viewModel()
     val loaderFlag by resolutionViewModel.loaderFlag.collectAsState(initial = false)
@@ -194,9 +293,13 @@ private fun PlayerSurface(
                 mediaTitle = mediaMetadata.title.toString()
             },
             onVideoSizeChanged = { videoSize ->
-                playerInfoViewModel.updatePlayerInfo(PlayerInfo("${videoSize.width}x${videoSize.height}"))
-                Log.e("PlayerSurface", "currentResolution: ${playerInfo.resolution}")
+                Log.e("player_metrics", "onVideoSizeChanged: ${videoSize.width}x${videoSize.height}")
+                playerInfoViewModel.updateResolution("${videoSize.width}x${videoSize.height}")
             },
+            onPlaybackStateChanged = { state ->
+                Log.e("player_metrics", "onPlaybackStateChanged: ${state}")
+                playerInfoViewModel.updateState(state)
+            }
         )
         // Title chip and optional Debug info chip
         Column(
@@ -265,7 +368,7 @@ fun DebugInfoChip(
     modifier: Modifier = Modifier,
     playerInfoViewModel: PlayerInfoViewModel = viewModel(),
 ) {
-    val playerInfo by playerInfoViewModel.playerInfo.collectAsState(initial = PlayerInfo("0x0"))
+    val playerInfo by playerInfoViewModel.playerInfo.collectAsState(initial = PlayerInfo("0x0", -1))
     val resolutionViewModel: ResolutionViewModel = viewModel()
     val showResolutionMenuFlag by resolutionViewModel.menuFlagMobile.collectAsState(initial = false)
 

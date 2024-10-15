@@ -94,6 +94,7 @@ fun PlayerComponent(
     modifier: Modifier = Modifier,
     onCurrentMediaMetadataChanged: (MediaMetadata) -> Unit = {},
     onVideoSizeChanged: (VideoSize) -> Unit = {},
+    onPlaybackStateChanged: (Int) -> Unit = {}
 ) {
     val resolutionViewModel: ResolutionViewModel = viewModel()
     // Get current context
@@ -215,6 +216,7 @@ fun PlayerComponent(
 
                     override fun onPlaybackStateChanged(playbackState: Int) {
                         super.onPlaybackStateChanged(playbackState)
+                        onPlaybackStateChanged(playbackState)
                         Log.d("player", "playbackState: $playbackState")
                         when (playbackState) {
                             Player.STATE_READY -> {
