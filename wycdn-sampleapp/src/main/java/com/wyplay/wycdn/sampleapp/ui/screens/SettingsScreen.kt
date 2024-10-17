@@ -47,7 +47,13 @@ import com.wyplay.wycdn.sampleapp.BuildConfig
 import com.wyplay.wycdn.sampleapp.R
 import com.wyplay.wycdn.sampleapp.ui.models.SettingsViewModel
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnViewModel
-
+import androidx.compose.material3.SnackbarHostState
+import kotlinx.coroutines.launch
+import  androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 /**
  * Settings screen allowing to update application settings.
  *
@@ -97,17 +103,57 @@ fun SettingsScreen(
     // Local state to store the debug info enabled state, initialized with wycdnDebugInfoEnabled
     var debugInfoEnabled by remember { mutableStateOf(wycdnDebugInfoEnabled) }
 
+    // Collect the current debug menu enabled state as state for composable to react to changes
+    val debugMenuEnabled by settingsViewModel.debugMenuEnabled.collectAsState(initial = false)
+
+    // Click counter and visibility state for hidden elements
+    val clickCounter = remember { mutableIntStateOf(0) }
+
+    // Snack bar host state
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Coroutine scope for snackbar
+    val coroutineScope = rememberCoroutineScope()
+
+    // mutable interaction source
+    val interactionSource = remember { MutableInteractionSource() }
+
     // Observe changes in wycdnDebugInfoEnabled and update debugInfoEnabled accordingly
     // This is needed as it wycdnDebugInfoEnabled is collected asynchronously
     LaunchedEffect(wycdnDebugInfoEnabled) {
         debugInfoEnabled = wycdnDebugInfoEnabled
     }
 
+
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("${stringResource(R.string.title_settings_screen)} ${BuildConfig.VERSION_NAME}") })
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "${stringResource(R.string.title_settings_screen)} ${BuildConfig.VERSION_NAME}",
+                        modifier = Modifier
+                            .clickable(
+                                indication = null,
+                                interactionSource = interactionSource
+                            ) {
+                                clickCounter.intValue++
+                                if (clickCounter.intValue >= 10) {
+                                    settingsViewModel.setDebugMenuEnabled(true)
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(message = "Debug menu activated",
+                                            withDismissAction = true,
+                                            duration = SnackbarDuration.Short)
+                                    }
+                                }
+                            }
+                            .background(Transparent)
+                            .padding(16.dp)
+                    )
+                }
+            )
         },
-        modifier = modifier
+        modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
             // Peer ID label
@@ -130,38 +176,40 @@ fun SettingsScreen(
                 }
             )
 
-            // Send Download metric enabled switch
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.label_download_metrics_enabled)
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Switch(
-                    checked = downloadMetricsEnabled,
-                    onCheckedChange = {
-                        downloadMetricsEnabled = it
-                    }
-                )
-            }
+            if (debugMenuEnabled) {
+                // Send Download metric enabled switch
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.label_download_metrics_enabled)
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = downloadMetricsEnabled,
+                        onCheckedChange = {
+                            downloadMetricsEnabled = it
+                        }
+                    )
+                }
 
-            // WyCDN debug info enabled switch
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.label_wycdn_debug_info_enabled)
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Switch(
-                    checked = debugInfoEnabled,
-                    onCheckedChange = {
-                        debugInfoEnabled = it
-                    }
-                )
+                // WyCDN debug info enabled switch
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.label_wycdn_debug_info_enabled)
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = debugInfoEnabled,
+                        onCheckedChange = {
+                            debugInfoEnabled = it
+                        }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.weight(1f)) // This pushes the button to the bottom

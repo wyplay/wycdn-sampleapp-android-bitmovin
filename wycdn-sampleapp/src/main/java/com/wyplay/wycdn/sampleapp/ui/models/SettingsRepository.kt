@@ -120,6 +120,26 @@ class SettingsRepository(
         }
     }
 
+    // Backing property for the WyCDN debug menu enabled setting, initially set to false.
+    private val _wycdnDebugMenuEnabled = MutableStateFlow(false)
+
+    /**
+     * A [Flow] of Boolean representing whether to enable WyCDN debug menu. This flow emits
+     */
+    val wycdnDebugMenuEnabled: Flow<Boolean> = _wycdnDebugMenuEnabled.asStateFlow()
+
+    /**
+     * Updates the WyCDN debug menu enabled setting.
+     *
+     * @param enable The Boolean value to be stored as the new setting.
+     */
+    suspend fun setWycdnDebugMenuEnabled(enable: Boolean) {
+        _wycdnDebugMenuEnabled.value = enable
+        dataStore.edit { preferences ->
+            preferences[WYCDN_DEBUG_MENU_ENABLED_KEY] = enable
+        }
+    }
+
     init {
         // Load settings from the DataStore when application starts
         CoroutineScope(Dispatchers.IO).launch {
@@ -137,6 +157,10 @@ class SettingsRepository(
             preferences[WYCDN_DEBUG_INFO_ENABLED_KEY]?.let { enabled ->
                 _wycdnDebugInfoEnabled.value = enabled
             }
+
+            preferences[WYCDN_DEBUG_MENU_ENABLED_KEY]?.let { enabled ->
+                _wycdnDebugMenuEnabled.value = enabled
+            }
         }
     }
 
@@ -149,5 +173,8 @@ class SettingsRepository(
 
         /** [Preferences.Key] used to store and retrieve the WyCDN debug info enabled setting. */
         internal val WYCDN_DEBUG_INFO_ENABLED_KEY = booleanPreferencesKey("wycdn_debug_info_enabled")
+
+        /** [Preferences.Key] used to store and retrieve the WyCDN debug menu enabled setting. */
+        internal val WYCDN_DEBUG_MENU_ENABLED_KEY = booleanPreferencesKey("wycdn_debug_menu_enabled")
     }
 }
