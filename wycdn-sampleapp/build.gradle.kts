@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Base64
 
 plugins {
     alias(libs.plugins.android.application)
@@ -21,6 +22,18 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // Set Bitmovin player license key defined in gradle.properties.
+        // The key is stored in BuildConfig under an unrelated name and obfuscated using Base64 to make it less obvious in the APK.
+        // Note: This is a basic form of obfuscation and not a secure method.
+        // For a real app, consider using encryption or fetching the key from a secure server.
+        val originalKey = project.property("bitmovinPlayerLicenceKey").toString()
+        val encodedKey = Base64.getEncoder().encodeToString(originalKey.encodeToByteArray())
+        buildConfigField(
+            type = "String",
+            name = "BUILD_ID",
+            value = "\"${encodedKey}\""
+        )
     }
 
     buildTypes {
@@ -73,15 +86,8 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
-    // Media3
-    implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.exoplayer.dash)
-    implementation(libs.androidx.media3.exoplayer.hls)
-    implementation(libs.androidx.media3.ui)
-
-    // Coroutine
-    implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.kotlinx.coroutines.android)
+    // Bitmovin player
+    implementation(libs.bitmovin.player)
 
     // Testing
     testImplementation(libs.junit)
