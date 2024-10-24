@@ -200,7 +200,7 @@ fun SettingsScreen(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = stringResource(R.string.label_wycdn_debug_info_enabled)
+                        text = stringResource(R.string.label_wycdn_debug_info_enabled),
                     )
                     Spacer(modifier = Modifier.weight(1f))
                     Switch(
