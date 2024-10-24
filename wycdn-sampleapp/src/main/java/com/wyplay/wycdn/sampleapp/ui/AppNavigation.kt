@@ -21,7 +21,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.wyplay.wycdn.sampleapp.ui.models.MediaViewModel
 import com.wyplay.wycdn.sampleapp.ui.models.SettingsViewModel
-import com.wyplay.wycdn.sampleapp.ui.models.WycdnEnv
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnViewModel
 import com.wyplay.wycdn.sampleapp.ui.screens.MediaChooserScreen
 import com.wyplay.wycdn.sampleapp.ui.screens.PlayerInfoSender

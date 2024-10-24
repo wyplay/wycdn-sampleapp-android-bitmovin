@@ -186,7 +186,7 @@ class PlayerInfoSender(private var wycdnViewModel: WycdnViewModel)
                     }
                     delay(50L)
                 } catch (e: Exception) {
-                    metricQueue.offer(metric);
+                    metricQueue.offer(metric)
                     break
                 }
             }
@@ -199,7 +199,7 @@ class PlayerInfoSender(private var wycdnViewModel: WycdnViewModel)
         }
     }
 
-    fun startQueueProcessor() {
+    private fun startQueueProcessor() {
         GlobalScope.launch(Dispatchers.IO) {
             while (isActive) {
                 sendMetrics()
@@ -219,19 +219,19 @@ class PlayerInfoSender(private var wycdnViewModel: WycdnViewModel)
     }
 }
 
-data class PlayerInfo(var resolution: String, var state: Int)
+data class PlayerInfo(var resolution: String = "0x0", var state: Int = -1)
 
 class PlayerInfoViewModel(private val playerInfoSender: PlayerInfoSender) : ViewModel() {
-    private val _playerInfo = MutableStateFlow(PlayerInfo("0x0", -1))
+    private val _playerInfo = MutableStateFlow(PlayerInfo())
     val playerInfo: StateFlow<PlayerInfo> = _playerInfo.asStateFlow()
 
     fun updateResolution(resolution: String) {
-        _playerInfo.value.resolution = resolution
+        _playerInfo.value = _playerInfo.value.copy(resolution = resolution)
         playerInfoSender.enqueueMetrics(_playerInfo.value)
     }
 
     fun updateState(state: Int) {
-        _playerInfo.value.state = state
+        _playerInfo.value = _playerInfo.value.copy(state = state)
         playerInfoSender.enqueueMetrics(_playerInfo.value)
     }
 
@@ -269,9 +269,6 @@ private fun PlayerSurface(
     modifier: Modifier = Modifier,
     playerInfoViewModel: PlayerInfoViewModel = viewModel(),
 ) {
-
-    val playerInfo by playerInfoViewModel.playerInfo.collectAsState(initial = PlayerInfo("0x0", -1))
-
     val resolutionViewModel: ResolutionViewModel = viewModel()
     val loaderFlag by resolutionViewModel.loaderFlag.collectAsState(initial = false)
     Box(
@@ -293,11 +290,9 @@ private fun PlayerSurface(
                 mediaTitle = mediaMetadata.title.toString()
             },
             onVideoSizeChanged = { videoSize ->
-                Log.e("player_metrics", "onVideoSizeChanged: ${videoSize.width}x${videoSize.height}")
                 playerInfoViewModel.updateResolution("${videoSize.width}x${videoSize.height}")
             },
             onPlaybackStateChanged = { state ->
-                Log.e("player_metrics", "onPlaybackStateChanged: ${state}")
                 playerInfoViewModel.updateState(state)
             }
         )
@@ -368,7 +363,7 @@ fun DebugInfoChip(
     modifier: Modifier = Modifier,
     playerInfoViewModel: PlayerInfoViewModel = viewModel(),
 ) {
-    val playerInfo by playerInfoViewModel.playerInfo.collectAsState(initial = PlayerInfo("0x0", -1))
+    val playerInfo by playerInfoViewModel.playerInfo.collectAsState(initial = PlayerInfo())
     val resolutionViewModel: ResolutionViewModel = viewModel()
     val showResolutionMenuFlag by resolutionViewModel.menuFlagMobile.collectAsState(initial = false)
 
@@ -452,17 +447,15 @@ fun ShowResolutionMenu() {
     val formats by resolutionViewModel.formats.collectAsState(initial = mutableSetOf())
     val selectedResolutionStr by resolutionViewModel.formatStr.collectAsState(initial = null)
 
-    formats.add(Pair(0, 0)) //AUTO
-
     var selectedResolution by remember {
         mutableStateOf<Pair<Int, Int>?>(null)
     }
 
-    val handleResolutionSelect: (Int, Int, String) -> Unit = { height, width, resolutionStr ->
-        selectedResolution = Pair(height, width)
+    val handleResolutionSelect: (Int, Int, String) -> Unit = { width, height, resolutionStr ->
+        selectedResolution = Pair(width, height)
         resolutionViewModel.setMenuFlagMobile(false)
         resolutionViewModel.setLoaderFlag(true)
-        resolutionViewModel.setSelectedResolution(Pair(height, width))
+        resolutionViewModel.setSelectedResolution(Pair(width, height))
         resolutionViewModel.addResolutionFormatStr(resolutionStr)
     }
 
@@ -482,17 +475,17 @@ fun ShowResolutionMenu() {
         ) {
             items(formats.toList()) { resolution ->
 
-                val resolutionString = if (resolution?.first == 0) {
+                val resolutionString = if (resolution.second == 0) {
                     "Auto"
                 } else {
-                    resolution?.first.toString() + "p "
+                    resolution.second.toString() + "p"
                 }
 
                 Row(modifier = Modifier
                     .clickable {
                         handleResolutionSelect(
-                            resolution?.first ?: 0,
-                            resolution?.second ?: 0,
+                            resolution.first,
+                            resolution.second,
                             resolutionString
                         )
                     }

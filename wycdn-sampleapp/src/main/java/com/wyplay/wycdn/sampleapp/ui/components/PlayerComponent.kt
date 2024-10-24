@@ -9,7 +9,6 @@
 
 package com.wyplay.wycdn.sampleapp.ui.components
 
-import android.util.EventLog
 import android.util.Log
 import android.view.KeyEvent
 import androidx.annotation.OptIn
@@ -72,6 +71,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
@@ -80,8 +80,8 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.util.EventLogger
 import androidx.media3.ui.PlayerView
-import com.wyplay.wycdn.sampleapp.ui.data.TrackInfo
 import com.wyplay.wycdn.sampleapp.ui.models.ResolutionViewModel
+import com.wyplay.wycdn.sampleapp.ui.models.TrackInfo
 
 /**
  * Composable function to display a media player component.
@@ -126,20 +126,17 @@ fun PlayerComponent(
 
     val eventLogger = EventLogger()
 
-    LaunchedEffect(selectedResolution) {
-        if (selectedResolution != null) {
-            if (selectedResolution!!.first > 0) {
-                val param = resolutionControl.setTrackByResolution(
-                    selectedResolution!!.first,
-                    selectedResolution!!.second,
-                    trackInfoList
-                )
-                param?.let { player?.trackSelectionParameters = it }
-            } else {
-                // AUTO
-                val param = resolutionControl.setAutoResolution()
-                player?.trackSelectionParameters = param
-            }
+    LaunchedEffect(selectedResolution, trackInfoList) {
+        if (selectedResolution.first > 0) {
+            val param = resolutionControl.setForcedResolution(
+                selectedResolution.first,
+                selectedResolution.second,
+                trackInfoList
+            )
+            param.let { player?.trackSelectionParameters = it }
+        } else {
+            val param = resolutionControl.setAutoResolution()
+            player?.trackSelectionParameters = param
         }
     }
 
@@ -187,7 +184,7 @@ fun PlayerComponent(
                     }
 
                     override fun onVideoSizeChanged(videoSize: VideoSize) {
-                        // Invoke the callback with the new video size
+                        Log.i("player", "onVideoSizeChanged: ${videoSize.width}x${videoSize.height}")
                         onVideoSizeChanged(videoSize)
                     }
 
@@ -197,17 +194,18 @@ fun PlayerComponent(
                             for (i in 0 until trackGroup.length) {
                                 val trackFormat = trackGroup.getTrackFormat(i)
                                 val isSelected = trackGroup.isSelected
+                                Log.d("player", "onTracksChanged: trackFormat=$trackFormat isSelected=$isSelected")
                                 if (trackFormat.height > 0 && isSelected) {
                                     val trackInfo = TrackInfo(
                                         trackGroup.mediaTrackGroup,
                                         i,
-                                        trackFormat.height,
-                                        trackFormat.width
+                                        trackFormat.width,
+                                        trackFormat.height
                                     )
                                     resolutionViewModel.addTrackInfo(trackInfo)
                                     resolutionViewModel.addResolutionFormat(
-                                        trackFormat.height,
-                                        trackFormat.width
+                                        trackFormat.width,
+                                        trackFormat.height
                                     )
                                 }
                             }
@@ -215,9 +213,8 @@ fun PlayerComponent(
                     }
 
                     override fun onPlaybackStateChanged(playbackState: Int) {
-                        super.onPlaybackStateChanged(playbackState)
+                        Log.i("player", "onPlaybackStateChanged: $playbackState")
                         onPlaybackStateChanged(playbackState)
-                        Log.d("player", "playbackState: $playbackState")
                         when (playbackState) {
                             Player.STATE_READY -> {
                                 resolutionViewModel.setLoaderFlag(false)
@@ -311,11 +308,11 @@ fun PlayerComponent(
                         ShowResolutionMenu()
                     }
                 }
+            }
 
-                LaunchedEffect(showResolutionBox) {
-                    if (showResolutionBox) {
-                        buttonFocusRequester.requestFocus()
-                    }
+            LaunchedEffect(showResolutionBox) {
+                if (showResolutionBox) {
+                    buttonFocusRequester.requestFocus()
                 }
             }
 
@@ -323,14 +320,6 @@ fun PlayerComponent(
                 modifier = modifier
                     .focusRequester(playerFocusRequester)
                     .focusable()
-                    .onFocusChanged { focusState ->
-                        //Debug
-                        if (focusState.isFocused) {
-                            Log.d("focusscreen", "player focus")
-                        } else {
-                            Log.e("focusscreen", "player has no focus")
-                        }
-                    }
                     .onKeyEvent { keyEvent ->
                         if (keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_UP) {
                             resolutionViewModel.setFocusOnResolutionMenu(true)
@@ -369,23 +358,21 @@ fun ShowResolutionMenu() {
     val formats by resolutionViewModel.formats.collectAsState(initial = mutableSetOf())
     val selectedResolutionStr by resolutionViewModel.formatStr.collectAsState(initial = null)
 
-    formats.add(Pair(0, 0)) // AUTO
-
     var selectedResolution by remember {
         mutableStateOf<Pair<Int, Int>?>(null)
     }
 
-    val handleResolutionSelect: (Int, Int, String) -> Unit = { height, width, resolutionStr ->
-        selectedResolution = Pair(height, width)
+    val handleResolutionSelect: (Int, Int, String) -> Unit = { width, height, resolutionStr ->
+        selectedResolution = Pair(width, height)
         resolutionViewModel.setMenuFlagTV(false)
         resolutionViewModel.setFocusOnResolutionMenu(true)
         resolutionViewModel.setLoaderFlag(true)
         resolutionViewModel.setFocusOnResolutionMenu(false)
-        resolutionViewModel.setSelectedResolution(Pair(height, width))
+        resolutionViewModel.setSelectedResolution(Pair(width, height))
         resolutionViewModel.addResolutionFormatStr(resolutionStr)
     }
     var focusedIndex by remember {
-        mutableStateOf(-1)
+        mutableIntStateOf(-1)
     }
 
     LaunchedEffect(Unit) {
@@ -401,7 +388,7 @@ fun ShowResolutionMenu() {
                     resolutionViewModel.setFocusOnResolutionMenu(false)
                     resolutionViewModel.setMenuFlagTV(false)
                     true
-                }else{
+                } else {
                     false
                 }
             }
@@ -420,10 +407,10 @@ fun ShowResolutionMenu() {
                 val textColor = if (index == focusedIndex) MaterialTheme.colorScheme.onPrimary
                 else Gray
 
-                val resolutionString = if (resolution?.first == 0) {
+                val resolutionString = if (resolution.second == 0) {
                     "Auto"
                 } else {
-                    resolution?.first.toString() + "p "
+                    resolution.second.toString() + "p"
                 }
                 Column (modifier = Modifier
                     .fillMaxWidth()
@@ -438,8 +425,8 @@ fun ShowResolutionMenu() {
                         .fillMaxWidth()
                         .clickable {
                             handleResolutionSelect(
-                                resolution?.first ?: 0,
-                                resolution?.second ?: 0,
+                                resolution.first,
+                                resolution.second,
                                 resolutionString
                             )
                         }
@@ -535,3 +522,42 @@ fun createPlayerView(player: Player?): PlayerView {
     return playerView
 }
 
+/**
+ * A utility class for controlling the resolution of video playback in the media player.
+ */
+@OptIn(UnstableApi::class)
+internal class ResolutionControl(private val trackSelector: DefaultTrackSelector) {
+
+    /**
+     * Sets a forced resolution based on the given width and height.
+     */
+    fun setForcedResolution(
+        width: Int,
+        height: Int,
+        trackInfoList: List<TrackInfo>
+    ): DefaultTrackSelector.Parameters {
+        Log.d("ResolutionControl", "setForcedResolution: ${width}x${height}")
+        for (trackInfo in trackInfoList) {
+            if (trackInfo.width == width && trackInfo.height == height) {
+                return trackSelector.buildUponParameters()
+                    .setOverrideForType(TrackSelectionOverride(trackInfo.mediaTrackGroup, trackInfo.index))
+                    .setMinVideoSize(width, height)
+                    .setMaxVideoSize(width, height)
+                    .build()
+            }
+        }
+        return trackSelector.buildUponParameters()
+            .setMinVideoSize(width, height)
+            .setMaxVideoSize(width, height)
+            .build()
+    }
+
+    /**
+     * Sets the resolution selection to automatic mode.
+     */
+    fun setAutoResolution(): DefaultTrackSelector.Parameters {
+        Log.d("ResolutionControl", "setAutoResolution")
+        return trackSelector.buildUponParameters().build()
+    }
+
+}
