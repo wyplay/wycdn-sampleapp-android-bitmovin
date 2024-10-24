@@ -24,8 +24,6 @@ import com.wyplay.wycdn.sampleapp.ui.models.SettingsViewModel
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnEnv
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnViewModel
 import com.wyplay.wycdn.sampleapp.ui.screens.MediaChooserScreen
-import com.wyplay.wycdn.sampleapp.ui.screens.PlayerInfoSender
-import com.wyplay.wycdn.sampleapp.ui.screens.PlayerInfoViewModel
 import com.wyplay.wycdn.sampleapp.ui.screens.PlayerScreen
 import com.wyplay.wycdn.sampleapp.ui.screens.SettingsScreen
 
@@ -65,9 +63,6 @@ fun AppNavigation() {
     // Create and remember a navigation controller to manage navigation between composable screens
     val navController: NavHostController = rememberNavController()
 
-    val playerInfoSender: PlayerInfoSender = PlayerInfoSender(wycdnViewModel)
-    val playerInfoViewModel: PlayerInfoViewModel = PlayerInfoViewModel(playerInfoSender)
-
     // Define the navigation graph for the application
     NavHost(
         navController = navController,
@@ -104,8 +99,7 @@ fun AppNavigation() {
             PlayerScreen(
                 mediaListState = mediaListState, // Media list for zapping
                 mediaIndex = mediaIndex, // Media to play
-                debugInfoState = wycdnDebugInfoState, // Debug info to display
-                playerInfoViewModel = playerInfoViewModel,
+                debugInfoState = wycdnDebugInfoState // Debug info to display
             )
         }
     }
