@@ -82,7 +82,7 @@ fun PlayerComponent(
         Source(
             SourceConfig.fromUrl(mediaItem.localConfiguration?.uri.toString()).apply {
                 this.title = mediaItem.mediaMetadata.title.toString()
-                this.liveConfig = SourceLiveConfig(targetLatency = 15.0)
+                this.liveConfig = SourceLiveConfig(targetLatency = 0.0)
             }
         )
     }
